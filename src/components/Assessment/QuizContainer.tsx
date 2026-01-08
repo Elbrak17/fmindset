@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnswerValue } from '@/types/assessment';
 import { QUIZ_QUESTIONS } from '@/utils/constants';
 import { QuizQuestion, QuizOption } from './QuizQuestion';
@@ -42,12 +43,14 @@ export function QuizContainer({
   initialAnswers,
   initialQuestionIndex = 0,
 }: QuizContainerProps) {
+  const router = useRouter();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(initialQuestionIndex);
   const [answers, setAnswers] = useState<(AnswerValue | null)[]>(
     initialAnswers || Array(25).fill(null)
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showExitModal, setShowExitModal] = useState(false);
   
   // Debounce refs
   const lastClickTime = useRef<number>(0);
@@ -174,8 +177,79 @@ export function QuizContainer({
     }
   }, [answers, currentAnswer, isSubmitting, onSubmit]);
 
+  /**
+   * Handle exit quiz - show confirmation modal
+   */
+  const handleExitClick = useCallback(() => {
+    setShowExitModal(true);
+  }, []);
+
+  /**
+   * Confirm exit - clear progress and go home
+   */
+  const handleConfirmExit = useCallback(() => {
+    // Clear session storage
+    sessionStorage.removeItem(STORAGE_KEYS.ANSWERS);
+    sessionStorage.removeItem(STORAGE_KEYS.QUESTION_INDEX);
+    // Clear localStorage backup
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.BACKUP_ANSWERS);
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.BACKUP_INDEX);
+    // Navigate home
+    router.push('/');
+  }, [router]);
+
+  /**
+   * Cancel exit - close modal
+   */
+  const handleCancelExit = useCallback(() => {
+    setShowExitModal(false);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Exit Modal */}
+      {showExitModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <div className="text-center">
+              <div className="text-5xl mb-4">🚪</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Leave Assessment?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Your progress will be saved. You can continue later from where you left off.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelExit}
+                  className="flex-1 px-4 py-3 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  Continue Quiz
+                </button>
+                <button
+                  onClick={handleConfirmExit}
+                  className="flex-1 px-4 py-3 rounded-lg font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+                >
+                  Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exit Button - Fixed top right */}
+      <button
+        onClick={handleExitClick}
+        className="fixed top-20 right-4 z-40 flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-600 hover:text-red-500 hover:border-red-200 transition-all shadow-sm"
+        aria-label="Exit quiz"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <span className="text-sm font-medium">Exit</span>
+      </button>
+
       {/* Quiz Question */}
       <QuizQuestion
         questionId={currentQuestion.id}

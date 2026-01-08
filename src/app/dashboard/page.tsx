@@ -1,6 +1,90 @@
-import Link from 'next/link'
+'use client';
+
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+
+// Types for journal data
+interface JournalEntry {
+  id: string;
+  mood: number;
+  energy: number;
+  stress: number;
+  entryDate: string;
+}
+
+interface BurnoutScore {
+  score: number;
+  riskLevel: 'low' | 'caution' | 'high' | 'critical';
+  contributingFactors: string[];
+}
+
+interface ActionItem {
+  id: string;
+  actionText: string;
+  category: string;
+  isCompleted: boolean;
+}
+
+// Risk level colors and labels
+const riskLevelConfig = {
+  low: { color: 'bg-green-100 text-green-800 border-green-200', label: 'Low Risk', icon: '✅' },
+  caution: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Caution', icon: '⚠️' },
+  high: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'High Risk', icon: '🔶' },
+  critical: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Critical', icon: '🚨' },
+};
 
 export default function Dashboard() {
+  const [todayEntry, setTodayEntry] = useState<JournalEntry | null>(null);
+  const [burnoutScore, setBurnoutScore] = useState<BurnoutScore | null>(null);
+  const [todayActions, setTodayActions] = useState<ActionItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // For demo purposes, using a static odId - in production this would come from auth
+  const odId = 'demo-user-123';
+
+  useEffect(() => {
+    async function fetchJournalData() {
+      try {
+        // Fetch today's journal entry
+        const historyRes = await fetch(`/api/journal/history?odId=${odId}&days=1`);
+        if (historyRes.ok) {
+          const historyData = await historyRes.json();
+          const today = new Date().toISOString().split('T')[0];
+          const todayEntryData = historyData.entries?.find(
+            (e: JournalEntry) => e.entryDate === today
+          );
+          setTodayEntry(todayEntryData || null);
+        }
+
+        // Fetch burnout score
+        const burnoutRes = await fetch(`/api/burnout/score?odId=${odId}`);
+        if (burnoutRes.ok) {
+          const burnoutData = await burnoutRes.json();
+          if (burnoutData.score !== undefined) {
+            setBurnoutScore(burnoutData);
+          }
+        }
+
+        // Fetch today's actions
+        const actionsRes = await fetch(`/api/actions/daily?odId=${odId}`);
+        if (actionsRes.ok) {
+          const actionsData = await actionsRes.json();
+          setTodayActions(actionsData.actions || []);
+        }
+      } catch (error) {
+        console.error('Error fetching journal data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchJournalData();
+  }, []);
+
+  const completedActions = todayActions.filter(a => a.isCompleted).length;
+  const totalActions = todayActions.length;
+  const completionPercent = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
+
   return (
     <div className="min-h-screen gradient-bg">
       {/* Header */}
@@ -26,6 +110,165 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
+        {/* Journal Summary Section */}
+        <div className="mb-12 animate-fade-in">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Daily Wellness</h2>
+            <Link
+              href="/dashboard/journal"
+              className="inline-flex items-center px-4 py-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+            >
+              Open Journal
+              <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Today's Check-in Status */}
+            <div className="card p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-3 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-xl">
+                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <h3 className="ml-3 text-lg font-semibold text-gray-900">Today's Check-in</h3>
+              </div>
+              
+              {loading ? (
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ) : todayEntry ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Mood</span>
+                    <span className="font-medium">{todayEntry.mood}/100</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Energy</span>
+                    <span className="font-medium">{todayEntry.energy}/100</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Stress</span>
+                    <span className="font-medium">{todayEntry.stress}/100</span>
+                  </div>
+                  <p className="text-xs text-green-600 mt-2">✓ Completed today</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-500 text-sm mb-3">You haven't checked in today</p>
+                  <Link
+                    href="/dashboard/journal"
+                    className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Log your check-in
+                    <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Burnout Risk Level */}
+            <div className="card p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-3 bg-gradient-to-br from-rose-100 to-rose-200 rounded-xl">
+                  <svg className="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <h3 className="ml-3 text-lg font-semibold text-gray-900">Burnout Risk</h3>
+              </div>
+              
+              {loading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              ) : burnoutScore ? (
+                <div>
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${riskLevelConfig[burnoutScore.riskLevel].color}`}>
+                    <span className="mr-1">{riskLevelConfig[burnoutScore.riskLevel].icon}</span>
+                    {riskLevelConfig[burnoutScore.riskLevel].label}
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">{burnoutScore.score}/100</p>
+                  {burnoutScore.contributingFactors.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {burnoutScore.contributingFactors.slice(0, 2).join(', ')}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-500 text-sm mb-3">No burnout data yet</p>
+                  <Link
+                    href="/dashboard/journal"
+                    className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Start tracking
+                    <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Action Completion Progress */}
+            <div className="card p-6">
+              <div className="flex items-center mb-4">
+                <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl">
+                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <h3 className="ml-3 text-lg font-semibold text-gray-900">Daily Actions</h3>
+              </div>
+              
+              {loading ? (
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ) : totalActions > 0 ? (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">{completedActions} of {totalActions} completed</span>
+                    <span className="text-sm font-medium text-emerald-600">{completionPercent}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${completionPercent}%` }}
+                    ></div>
+                  </div>
+                  {completionPercent === 100 && (
+                    <p className="text-xs text-emerald-600 mt-2">🎉 All done for today!</p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-500 text-sm mb-3">No actions for today</p>
+                  <Link
+                    href="/dashboard/journal"
+                    className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Generate actions
+                    <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <div className="card p-8 animate-scale-in">
@@ -117,26 +360,26 @@ export default function Dashboard() {
             </Link>
           </div>
           
-          {/* Assessment History Card */}
-          <div className="group card-interactive p-10 text-center md:col-span-2 lg:col-span-1 animate-fade-in" style={{animationDelay: '0.2s'}}>
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-3xl mb-8 group-hover:scale-110 transition-all duration-300">
+          {/* Journal Card - NEW */}
+          <div className="group card-interactive p-10 text-center animate-fade-in" style={{animationDelay: '0.2s'}}>
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl mb-8 group-hover:scale-110 group-hover:shadow-glow transition-all duration-300">
               <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Assessment History</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Daily Journal</h3>
             <p className="text-gray-600 mb-8 leading-relaxed text-lg">
-              Track your progress over time with previous assessments and see your growth journey.
+              Track your mood, energy, and stress levels. Get personalized actions to prevent burnout.
             </p>
-            <button 
-              disabled
-              className="inline-flex items-center justify-center w-full px-6 py-4 bg-gray-300 text-gray-500 font-semibold rounded-xl cursor-not-allowed text-lg"
+            <Link
+              href="/dashboard/journal"
+              className="inline-flex items-center justify-center w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg text-lg focus-ring"
             >
-              Coming Soon
+              Open Journal
               <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -168,5 +411,5 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
-  )
+  );
 }

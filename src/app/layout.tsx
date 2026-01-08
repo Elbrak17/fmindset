@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import Header from '../components/Layout/Header'
+import Footer from '../components/Layout/Footer'
 
 export const metadata: Metadata = {
   title: 'FMindset - Founder Psychology Assessment',
@@ -21,7 +23,13 @@ export default function RootLayout({
           rel="stylesheet" 
         />
       </head>
-      <body>{children}</body>
+      <body className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 pt-16">
+          {children}
+        </main>
+        <Footer />
+      </body>
     </html>
   )
 }

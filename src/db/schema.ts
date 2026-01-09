@@ -91,6 +91,76 @@ export const actionItems = pgTable('action_items', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Community Enums
+export const postCategoryEnum = pgEnum('post_category', [
+  'burnout', 'imposter_syndrome', 'isolation', 'general'
+]);
+
+// Forum Posts table
+export const forumPosts = pgTable('forum_posts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull(),
+  pseudonym: text('pseudonym').notNull(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  category: postCategoryEnum('category').notNull().default('general'),
+  showArchetype: boolean('show_archetype').notNull().default(false),
+  archetype: archetypeEnum('archetype'),
+  replyCount: integer('reply_count').notNull().default(0),
+  reportCount: integer('report_count').notNull().default(0),
+  isHidden: boolean('is_hidden').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Forum Replies table
+export const forumReplies = pgTable('forum_replies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  postId: uuid('post_id').notNull(),
+  parentReplyId: uuid('parent_reply_id'),
+  userId: text('user_id').notNull(),
+  pseudonym: text('pseudonym').notNull(),
+  body: text('body').notNull(),
+  reportCount: integer('report_count').notNull().default(0),
+  isHidden: boolean('is_hidden').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Post Reports table
+export const postReports = pgTable('post_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  postId: uuid('post_id'),
+  replyId: uuid('reply_id'),
+  reporterId: text('reporter_id').notNull(),
+  reason: text('reason').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Peer Matches table
+export const peerMatches = pgTable('peer_matches', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull(),
+  matchedUserId: text('matched_user_id').notNull(),
+  matchScore: integer('match_score').notNull(),
+  sharedDimensions: jsonb('shared_dimensions').notNull().default([]),
+  isDismissed: boolean('is_dismissed').notNull().default(false),
+  isMutualOptIn: boolean('is_mutual_opt_in').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Notifications table
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull(),
+  type: text('type').notNull(), // 'reply', 'match', 'system'
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  relatedPostId: uuid('related_post_id'),
+  relatedReplyId: uuid('related_reply_id'),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Relations
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   assessments: many(assessments),
@@ -132,6 +202,43 @@ export const actionItemsRelations = relations(actionItems, ({ one }) => ({
   }),
 }));
 
+export const forumPostsRelations = relations(forumPosts, ({ one, many }) => ({
+  userProfile: one(userProfiles, {
+    fields: [forumPosts.userId],
+    references: [userProfiles.odId],
+  }),
+  replies: many(forumReplies),
+}));
+
+export const forumRepliesRelations = relations(forumReplies, ({ one }) => ({
+  post: one(forumPosts, {
+    fields: [forumReplies.postId],
+    references: [forumPosts.id],
+  }),
+  parentReply: one(forumReplies, {
+    fields: [forumReplies.parentReplyId],
+    references: [forumReplies.id],
+  }),
+}));
+
+export const peerMatchesRelations = relations(peerMatches, ({ one }) => ({
+  user: one(userProfiles, {
+    fields: [peerMatches.userId],
+    references: [userProfiles.odId],
+  }),
+  matchedUser: one(userProfiles, {
+    fields: [peerMatches.matchedUserId],
+    references: [userProfiles.odId],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  userProfile: one(userProfiles, {
+    fields: [notifications.userId],
+    references: [userProfiles.odId],
+  }),
+}));
+
 // Types
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
@@ -143,3 +250,13 @@ export type BurnoutScore = typeof burnoutScores.$inferSelect;
 export type NewBurnoutScore = typeof burnoutScores.$inferInsert;
 export type ActionItem = typeof actionItems.$inferSelect;
 export type NewActionItem = typeof actionItems.$inferInsert;
+export type ForumPost = typeof forumPosts.$inferSelect;
+export type NewForumPost = typeof forumPosts.$inferInsert;
+export type ForumReply = typeof forumReplies.$inferSelect;
+export type NewForumReply = typeof forumReplies.$inferInsert;
+export type PostReport = typeof postReports.$inferSelect;
+export type NewPostReport = typeof postReports.$inferInsert;
+export type PeerMatch = typeof peerMatches.$inferSelect;
+export type NewPeerMatch = typeof peerMatches.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;

@@ -10,7 +10,6 @@ import {
   GroqInsightsResponse 
 } from '@/types/assessment';
 
-// Session storage keys (matching quiz page)
 const STORAGE_KEYS = {
   RESULTS: 'fmindset_assessment_results',
   USER_ID: 'fmindset_anonymous_user_id',
@@ -28,19 +27,6 @@ interface ResultsPageState {
   canRetry: boolean;
 }
 
-/**
- * Results Page Component
- * 
- * Displays assessment results after quiz completion:
- * - Loads results from session storage/API
- * - Displays ResultsDisplay immediately (don't wait for Groq)
- * - Calls /api/groq/insights async
- * - Fades in insights when ready
- * - Shows fallback if Groq fails
- * - Provides Retake Assessment and Go to Dashboard buttons
- * 
- * Requirements: 5.1, 5.10, 5.11, 5.12, 5.13, 6.10, 6.11, 6.12
- */
 export default function ResultsPage() {
   const router = useRouter();
   const [state, setState] = useState<ResultsPageState>({
@@ -54,19 +40,12 @@ export default function ResultsPage() {
     canRetry: false,
   });
 
-
-  /**
-   * Load assessment results on mount
-   * Requirements: 5.1, 5.10, 7.1
-   */
   useEffect(() => {
     const loadResults = async () => {
       try {
-        // Try to load results from session storage first
         const storedResults = sessionStorage.getItem(STORAGE_KEYS.RESULTS);
         
         if (!storedResults) {
-          // No results found - redirect to quiz
           setState(prev => ({
             ...prev,
             isLoading: false,
@@ -80,7 +59,6 @@ export default function ResultsPage() {
         try {
           results = JSON.parse(storedResults);
         } catch (parseError) {
-          // Corrupted data - Requirements: 7.1
           console.error('Failed to parse stored results:', parseError);
           setState(prev => ({
             ...prev,
@@ -91,7 +69,6 @@ export default function ResultsPage() {
           return;
         }
 
-        // Validate results structure
         if (!results.scores || !results.archetype) {
           console.error('Invalid results structure');
           setState(prev => ({
@@ -103,7 +80,6 @@ export default function ResultsPage() {
           return;
         }
         
-        // Check for cached Groq insights (Requirement 6.11)
         const cachedInsights = sessionStorage.getItem(STORAGE_KEYS.GROQ_INSIGHTS);
         
         setState({
@@ -112,17 +88,15 @@ export default function ResultsPage() {
           archetype: results.archetype,
           recommendations: results.recommendations,
           groqInsights: cachedInsights || null,
-          isLoadingInsights: !cachedInsights, // Only load if not cached
+          isLoadingInsights: !cachedInsights,
           error: null,
           canRetry: false,
         });
 
-        // Fetch Groq insights async if not cached (Requirement 5.11, 6.10)
         if (!cachedInsights) {
           fetchGroqInsights(results.scores, results.archetype.name);
         }
       } catch (error) {
-        // MongoDB/storage failure - Requirements: 7.1
         console.error('Failed to load results:', error);
         setState(prev => ({
           ...prev,
@@ -137,11 +111,6 @@ export default function ResultsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Fetch Groq AI insights asynchronously
-   * Requirements: 5.11, 5.12, 5.13, 6.10, 7.3
-   * Groq failure: show fallback, don't block results
-   */
   const fetchGroqInsights = useCallback(async (
     scores: PsychologicalScores, 
     archetypeName: string
@@ -158,28 +127,20 @@ export default function ResultsPage() {
         }),
       });
 
-      // Even if response is not ok, try to get fallback from body
-      // Requirements: 7.3 - Groq failure should not block results
       const data: GroqInsightsResponse = await response.json();
       
-      // Cache insights to prevent re-fetching on refresh (Requirement 6.11)
       if (data.insights) {
         sessionStorage.setItem(STORAGE_KEYS.GROQ_INSIGHTS, data.insights);
       }
 
-      // Update state with insights (fade-in handled by ResultsDisplay)
       setState(prev => ({
         ...prev,
         groqInsights: data.insights || null,
         isLoadingInsights: false,
       }));
     } catch (error) {
-      // Groq failure - show fallback, don't block results (Requirement 5.13, 7.3)
       console.error('Groq insights error:', error);
-      
-      // Set fallback text instead of null to show something to user
       const fallbackText = "We're generating personalized insights for you. Check back in a moment.";
-      
       setState(prev => ({
         ...prev,
         groqInsights: fallbackText,
@@ -188,60 +149,56 @@ export default function ResultsPage() {
     }
   }, []);
 
-  /**
-   * Handle retake assessment
-   * Clears results and redirects to quiz
-   */
   const handleRetakeAssessment = useCallback(() => {
-    // Clear stored results and insights
     sessionStorage.removeItem(STORAGE_KEYS.RESULTS);
     sessionStorage.removeItem(STORAGE_KEYS.GROQ_INSIGHTS);
-    
-    // Navigate to quiz page
     router.push('/assessment/quiz');
   }, [router]);
 
-  /**
-   * Handle go to dashboard
-   */
   const handleGoToDashboard = useCallback(() => {
     router.push('/dashboard');
   }, [router]);
 
-  /**
-   * Handle retry loading results
-   * Requirements: 7.1
-   */
   const handleRetry = useCallback(() => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
-    // Reload the page to retry loading results
     window.location.reload();
   }, []);
 
   // Loading state
   if (state.isLoading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
-        <div className="text-center animate-fade-in">
-          <div className="animate-spin-slow rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
-          <p className="text-gray-600 text-xl">Loading your results...</p>
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30" />
+        <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-100/40 via-transparent to-transparent" />
+        <div className="relative text-center animate-fade-in">
+          <div className="relative w-20 h-20 mx-auto mb-8">
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-100"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin"></div>
+            <div className="absolute inset-2 rounded-full border-4 border-purple-100"></div>
+            <div className="absolute inset-2 rounded-full border-4 border-purple-500 border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          <p className="text-gray-600 text-xl font-medium">Loading your results...</p>
+          <p className="text-gray-400 text-sm mt-2">Analyzing your psychological profile</p>
         </div>
       </div>
     );
   }
 
-  // Error state - with retry option for connection errors
-  // Requirements: 7.1
+  // Error state
   if (state.error || !state.scores || !state.archetype) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center px-4">
-        <div className="text-center max-w-lg animate-scale-in">
-          <div className="card p-10">
-            <div className="text-6xl mb-6">{state.canRetry ? '⚠️' : '📋'}</div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30" />
+        <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-100/40 via-transparent to-transparent" />
+        <div className="relative text-center max-w-lg animate-scale-in">
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-10 border border-white/50 shadow-2xl shadow-gray-200/50">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+              <span className="text-5xl">{state.canRetry ? '⚠️' : '📋'}</span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
               {state.error || 'No Results Found'}
             </h2>
-            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+            <p className="text-gray-600 mb-8 leading-relaxed">
               {state.canRetry 
                 ? 'There was a problem loading your results. Please try again.'
                 : 'It looks like you haven\'t completed the assessment yet, or your session has expired.'
@@ -251,17 +208,17 @@ export default function ResultsPage() {
               {state.canRetry && (
                 <button
                   onClick={handleRetry}
-                  className="btn-primary text-lg px-8 py-4"
+                  className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:scale-105 transition-all duration-300"
                 >
                   🔄 Retry
                 </button>
               )}
               <button
                 onClick={() => router.push('/assessment/quiz')}
-                className={`text-lg px-8 py-4 ${
+                className={`px-8 py-4 font-semibold rounded-2xl transition-all duration-300 ${
                   state.canRetry 
-                    ? 'btn-secondary'
-                    : 'btn-primary'
+                    ? 'bg-white border-2 border-gray-200 text-gray-700 hover:border-indigo-300 hover:shadow-lg'
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:scale-105'
                 }`}
               >
                 {state.canRetry ? 'Start New Assessment' : 'Take the Assessment'}
@@ -273,62 +230,83 @@ export default function ResultsPage() {
     );
   }
 
-
   // Results display
   return (
-    <div className="min-h-screen gradient-bg">
-      {/* Header */}
-      <header className="glass-effect border-b border-white/20 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <h1 className="text-3xl md:text-4xl font-bold gradient-text text-center animate-fade-in">
-            Your Assessment Results
-          </h1>
-          <p className="text-gray-600 text-center mt-2 text-lg animate-slide-in-left">
-            Here's your personalized founder psychology profile
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Premium Background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100/40 via-transparent to-transparent" />
+      <div className="fixed top-20 right-[10%] w-96 h-96 bg-gradient-to-br from-purple-200/20 to-pink-200/20 rounded-full blur-3xl animate-blob" />
+      <div className="fixed bottom-20 left-[10%] w-80 h-80 bg-gradient-to-br from-cyan-200/20 to-indigo-200/20 rounded-full blur-3xl animate-blob animation-delay-2000" />
 
-      {/* Main content */}
-      <main className="pb-12">
-        {/* Results Display Component */}
-        <ResultsDisplay
-          scores={state.scores}
-          archetype={state.archetype}
-          recommendations={state.recommendations}
-          groqInsights={state.groqInsights}
-          isLoadingInsights={state.isLoadingInsights}
-        />
-
-        {/* Action Buttons */}
-        <div className="max-w-4xl mx-auto px-4 mt-12">
-          <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in">
-            <button
-              onClick={handleRetakeAssessment}
-              className="btn-secondary text-lg px-8 py-4"
-            >
-              🔄 Retake Assessment
-            </button>
-            <button
-              onClick={handleGoToDashboard}
-              className="btn-primary text-lg px-8 py-4"
-            >
-              📊 Go to Dashboard
-            </button>
-          </div>
-        </div>
-
-        {/* Footer note */}
-        <div className="max-w-4xl mx-auto px-4 mt-12 text-center animate-slide-in-left">
-          <div className="card p-8">
-            <p className="text-gray-600 text-lg leading-relaxed">
-              Your results are saved and can be accessed from your dashboard.
-              <br />
-              Consider retaking the assessment periodically to track your growth.
+      {/* Content */}
+      <div className="relative z-10 pt-24 pb-16">
+        {/* Header */}
+        <header className="px-4 mb-12">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-sm mb-6 animate-fade-in-down">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-sm font-medium text-emerald-700">Assessment Complete</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight mb-4 animate-fade-in-up">
+              Your <span className="gradient-text">Results</span>
+            </h1>
+            <p className="text-gray-600 text-lg md:text-xl animate-fade-in-up animation-delay-200">
+              Here&apos;s your personalized founder psychology profile
             </p>
           </div>
-        </div>
-      </main>
+        </header>
+
+        {/* Main content */}
+        <main className="pb-12">
+          <ResultsDisplay
+            scores={state.scores}
+            archetype={state.archetype}
+            recommendations={state.recommendations}
+            groqInsights={state.groqInsights}
+            isLoadingInsights={state.isLoadingInsights}
+          />
+
+          {/* Action Buttons */}
+          <div className="max-w-4xl mx-auto px-4 mt-12">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up">
+              <button
+                onClick={handleRetakeAssessment}
+                className="group px-8 py-4 bg-white/80 backdrop-blur-sm border-2 border-gray-200 text-gray-700 font-semibold rounded-2xl hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-100/50 transition-all duration-300"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  🔄 Retake Assessment
+                </span>
+              </button>
+              <button
+                onClick={handleGoToDashboard}
+                className="group px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:scale-105 transition-all duration-300"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  📊 Go to Dashboard
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Footer note */}
+          <div className="max-w-4xl mx-auto px-4 mt-12 text-center animate-fade-in-up animation-delay-300">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-lg shadow-gray-100/50">
+              <p className="text-gray-600 leading-relaxed">
+                Your results are saved and can be accessed from your dashboard.
+                <br />
+                <span className="text-indigo-600 font-medium">Consider retaking the assessment periodically to track your growth.</span>
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

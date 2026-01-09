@@ -31,6 +31,38 @@ export interface QuizContainerState {
   error: string | null;
 }
 
+// Helper to safely get initial values from storage
+function getInitialState(
+  propAnswers?: (AnswerValue | null)[],
+  propIndex?: number
+): { answers: (AnswerValue | null)[]; index: number } {
+  // First try to get from session storage (most recent)
+  if (typeof window !== 'undefined') {
+    try {
+      const storedAnswers = sessionStorage.getItem(STORAGE_KEYS.ANSWERS);
+      const storedIndex = sessionStorage.getItem(STORAGE_KEYS.QUESTION_INDEX);
+      
+      if (storedAnswers) {
+        const parsedAnswers = JSON.parse(storedAnswers);
+        const parsedIndex = storedIndex ? parseInt(storedIndex, 10) : 0;
+        
+        // Use storage values if they have progress
+        if (parsedAnswers.some((a: AnswerValue | null) => a !== null) || parsedIndex > 0) {
+          return { answers: parsedAnswers, index: parsedIndex };
+        }
+      }
+    } catch (e) {
+      console.error('Failed to read from session storage:', e);
+    }
+  }
+  
+  // Fall back to props
+  return {
+    answers: propAnswers || Array(25).fill(null),
+    index: propIndex || 0,
+  };
+}
+
 /**
  * QuizContainer Component
  * Manages the 25-question quiz flow with navigation, state preservation,
@@ -44,10 +76,18 @@ export function QuizContainer({
   initialQuestionIndex = 0,
 }: QuizContainerProps) {
   const router = useRouter();
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(initialQuestionIndex);
-  const [answers, setAnswers] = useState<(AnswerValue | null)[]>(
-    initialAnswers || Array(25).fill(null)
-  );
+  
+  // Initialize state from storage or props - this runs once on mount
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
+    const initial = getInitialState(initialAnswers, initialQuestionIndex);
+    return initial.index;
+  });
+  
+  const [answers, setAnswers] = useState<(AnswerValue | null)[]>(() => {
+    const initial = getInitialState(initialAnswers, initialQuestionIndex);
+    return initial.answers;
+  });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);

@@ -792,3 +792,32 @@ export async function regeneratePseudonym(userId: string): Promise<string> {
 
   return newPseudonym;
 }
+
+/**
+ * Delete a post (only by the owner)
+ */
+export async function deletePost(postId: string, userId: string): Promise<void> {
+  // Verify ownership
+  const post = await db
+    .select()
+    .from(forumPosts)
+    .where(eq(forumPosts.id, postId))
+    .limit(1);
+
+  if (post.length === 0) {
+    throw new CommunityValidationError('Post not found');
+  }
+
+  if (post[0].userId !== userId) {
+    throw new CommunityValidationError('You can only delete your own posts');
+  }
+
+  // Delete replies first (cascade)
+  await db.delete(forumReplies).where(eq(forumReplies.postId, postId));
+  
+  // Delete reports
+  await db.delete(postReports).where(eq(postReports.postId, postId));
+  
+  // Delete the post
+  await db.delete(forumPosts).where(eq(forumPosts.id, postId));
+}

@@ -50,10 +50,13 @@ export default function PostPage() {
   const [reportReason, setReportReason] = useState('');
 
   const [odId, setOdId] = useState<string | null>(null);
+  const [userPseudonym, setUserPseudonym] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedOdId = localStorage.getItem('odId');
+    const storedOdId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
     setOdId(storedOdId);
+    const storedPseudonym = localStorage.getItem('fmindset_pseudonym');
+    setUserPseudonym(storedPseudonym);
   }, []);
 
   const fetchPost = useCallback(async () => {
@@ -211,8 +214,12 @@ export default function PostPage() {
         </article>
 
         {/* Reply Form */}
-        {odId && (
+        {odId && userPseudonym ? (
           <form onSubmit={handleSubmitReply} className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+            <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+              <span>Replying as</span>
+              <span className="font-semibold text-indigo-600">{userPseudonym}</span>
+            </div>
             {replyingTo && (
               <div className="flex items-center justify-between mb-2 text-sm text-gray-600">
                 <span>Replying to a comment</span>
@@ -244,7 +251,20 @@ export default function PostPage() {
               </button>
             </div>
           </form>
-        )}
+        ) : odId && !userPseudonym ? (
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-4 mb-6">
+            <p className="text-sm text-indigo-800 mb-3">
+              <span className="font-semibold">Create a pseudonym to reply</span> — Your identity stays anonymous
+            </p>
+            <Link
+              href="/community"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <span>🎭</span>
+              Set up your pseudonym
+            </Link>
+          </div>
+        ) : null}
 
         {/* Replies */}
         <div className="space-y-4">
@@ -285,7 +305,7 @@ export default function PostPage() {
                   </div>
                 </div>
                 <p className="text-gray-700 whitespace-pre-wrap">{reply.body}</p>
-                {odId && (
+                {odId && userPseudonym && (
                   <button
                     onClick={() => setReplyingTo(reply.id)}
                     className="mt-2 text-sm text-indigo-600 hover:underline"

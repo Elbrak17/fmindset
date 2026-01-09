@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuizContainer } from '@/components/Assessment/QuizContainer';
 import { AnswerValue, AssessmentSubmitResponse } from '@/types/assessment';

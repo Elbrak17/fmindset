@@ -17,7 +17,6 @@ import {
 } from '../../../components/Journal';
 import { useOfflineSync } from '../../../hooks/useOfflineSync';
 
-// Types for API responses
 interface JournalHistoryResponse {
   entries: JournalEntryForChart[];
   total: number;
@@ -47,20 +46,8 @@ interface ActionsResponse {
   completionStats: CompletionStats;
 }
 
-interface JournalEntryResponse {
-  success: boolean;
-  entry: ExistingEntry;
-  burnoutScore: {
-    score: number;
-    riskLevel: RiskLevel;
-    contributingFactors: string[];
-  };
-}
-
-// Helper to get or create odId from localStorage
 function getOrCreateOdId(): string {
   if (typeof window === 'undefined') return '';
-  
   let odId = localStorage.getItem('fmindset_odId');
   if (!odId) {
     odId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -69,58 +56,39 @@ function getOrCreateOdId(): string {
   return odId;
 }
 
-/**
- * Journal Page Component
- * Main page for daily journaling with check-in form, trends, burnout alerts, and action plans.
- * 
- * Requirements: 1.1, 1.4, 2.1, 2.2, 3.3, 4.1, 6.1, 6.2, 6.3, 6.4, 6.5
- */
 export default function JournalPage() {
-  // User ID state
   const [odId, setOdId] = useState<string>('');
-  
-  // Data states
   const [todayEntry, setTodayEntry] = useState<ExistingEntry | null>(null);
   const [entries, setEntries] = useState<JournalEntryForChart[]>([]);
   const [burnoutScore, setBurnoutScore] = useState<BurnoutScoreResponse | null>(null);
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [completionStats, setCompletionStats] = useState<CompletionStats | null>(null);
-  
-  // UI states
   const [period, setPeriod] = useState<7 | 14 | 30>(7);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize odId on mount
   useEffect(() => {
     setOdId(getOrCreateOdId());
   }, []);
 
-  // Offline sync hook
   const { status: syncStatus, saveEntry, forceSync } = useOfflineSync(odId);
 
-  // Fetch all data when odId is available
   const fetchAllData = useCallback(async () => {
     if (!odId) return;
-    
     setIsLoading(true);
     setError(null);
 
     try {
-      // Fetch all data in parallel
       const [historyRes, burnoutRes, actionsRes] = await Promise.allSettled([
         fetch(`/api/journal/history?odId=${encodeURIComponent(odId)}&days=${period}`),
         fetch(`/api/burnout/score?odId=${encodeURIComponent(odId)}`),
         fetch(`/api/actions/daily?odId=${encodeURIComponent(odId)}`),
       ]);
 
-      // Process journal history
       if (historyRes.status === 'fulfilled' && historyRes.value.ok) {
         const historyData: JournalHistoryResponse = await historyRes.value.json();
         setEntries(historyData.entries);
-        
-        // Find today's entry
         const today = new Date().toISOString().split('T')[0];
         const todayEntryData = historyData.entries.find(e => e.entryDate === today);
         if (todayEntryData) {
@@ -129,7 +97,7 @@ export default function JournalPage() {
             mood: todayEntryData.mood,
             energy: todayEntryData.energy,
             stress: todayEntryData.stress,
-            notes: null, // Notes not included in history response
+            notes: null,
             entryDate: todayEntryData.entryDate,
           });
         } else {
@@ -137,17 +105,13 @@ export default function JournalPage() {
         }
       }
 
-      // Process burnout score (404 is expected if no entries)
       if (burnoutRes.status === 'fulfilled') {
         if (burnoutRes.value.ok) {
           const burnoutData: BurnoutScoreResponse = await burnoutRes.value.json();
           setBurnoutScore(burnoutData);
-        } else if (burnoutRes.value.status !== 404) {
-          console.error('Failed to fetch burnout score');
         }
       }
 
-      // Process actions
       if (actionsRes.status === 'fulfilled' && actionsRes.value.ok) {
         const actionsData: ActionsResponse = await actionsRes.value.json();
         setActions(actionsData.actions);
@@ -161,24 +125,18 @@ export default function JournalPage() {
     }
   }, [odId, period]);
 
-  // Fetch data when odId or period changes
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData]);
 
-  // Handle form submission with offline support
   const handleSubmit = async (data: JournalEntryData) => {
     if (!odId) return;
-    
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Use offline-first approach via the sync hook
       const result = await saveEntry(data);
-      
       if (result.success) {
-        // If we got an entry back (online sync succeeded), update local state
         if (result.entry) {
           setTodayEntry({
             id: result.entry.id,
@@ -188,8 +146,6 @@ export default function JournalPage() {
             notes: result.entry.notes,
             entryDate: result.entry.entryDate,
           });
-
-          // Update burnout score if available
           if (result.burnoutScore) {
             setBurnoutScore({
               score: result.burnoutScore.score,
@@ -199,11 +155,8 @@ export default function JournalPage() {
               disclaimer: 'This is not a medical diagnosis.',
             });
           }
-
-          // Refresh all data to get updated trends and actions
           await fetchAllData();
         } else {
-          // Entry saved offline - update local state optimistically
           const today = new Date().toISOString().split('T')[0];
           setTodayEntry({
             id: `pending_${Date.now()}`,
@@ -214,8 +167,6 @@ export default function JournalPage() {
             entryDate: today,
           });
         }
-        
-        // Show info message if saved offline
         if (result.error && !result.entry) {
           setError(result.error);
         }
@@ -225,44 +176,27 @@ export default function JournalPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save entry';
       setError(message);
-      throw err; // Re-throw so CheckInForm can handle it
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle action completion
   const handleCompleteAction = async (actionId: string) => {
     if (!odId) return;
-
     try {
       const response = await fetch('/api/actions/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actionId }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to complete action');
-      }
-
-      // Update local state
-      setActions(prev => 
-        prev.map(a => 
-          a.id === actionId 
-            ? { ...a, isCompleted: true, completedAt: new Date() }
-            : a
-        )
-      );
-
-      // Update completion stats
+      if (!response.ok) throw new Error('Failed to complete action');
+      setActions(prev => prev.map(a => a.id === actionId ? { ...a, isCompleted: true, completedAt: new Date() } : a));
       if (completionStats) {
         setCompletionStats({
           ...completionStats,
           completedActions: completionStats.completedActions + 1,
-          completionRate: Math.round(
-            ((completionStats.completedActions + 1) / completionStats.totalActions) * 100
-          ),
+          completionRate: Math.round(((completionStats.completedActions + 1) / completionStats.totalActions) * 100),
         });
       }
     } catch (err) {
@@ -271,193 +205,205 @@ export default function JournalPage() {
     }
   };
 
-  // Handle action refresh/regeneration
   const handleRefreshActions = async () => {
     if (!odId) return;
-
     try {
       const response = await fetch('/api/actions/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ odId }),
+        body: JSON.stringify({ odId, forceRegenerate: true }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate actions');
-      }
-
+      if (!response.ok) throw new Error('Failed to generate actions');
       const result = await response.json();
       setActions(result.actions);
+      if (result.completionStats) setCompletionStats(result.completionStats);
     } catch (err) {
       console.error('Error refreshing actions:', err);
       throw err;
     }
   };
 
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   return (
-    <div className="min-h-screen gradient-bg">
-      {/* Header */}
-      <header className="glass-effect border-b border-white/20 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold gradient-text">Daily Journal</h1>
-              <p className="text-gray-600 mt-1">Track your wellbeing and build healthy habits</p>
-            </div>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors rounded-xl hover:bg-white/50 focus-ring"
-            >
-              <svg className="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Premium Background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-100/40 via-transparent to-transparent" />
+      <div className="fixed top-40 right-[5%] w-80 h-80 bg-gradient-to-br from-purple-200/20 to-pink-200/20 rounded-full blur-3xl animate-blob" />
+      <div className="fixed bottom-20 left-[10%] w-96 h-96 bg-gradient-to-br from-cyan-200/20 to-indigo-200/20 rounded-full blur-3xl animate-blob animation-delay-2000" />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Sync Status Indicator */}
-        <SyncStatusIndicator 
-          status={syncStatus} 
-          onForceSync={forceSync}
-          className="mb-6"
-        />
-
-        {/* Error Banner */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
+      {/* Content */}
+      <div className="relative z-10 pt-24 pb-16">
+        {/* Header */}
+        <header className="px-4 mb-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div className="animate-fade-in-up">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 shadow-sm mb-4">
+                  <span className="text-lg">✍️</span>
+                  <span className="text-sm font-medium text-gray-600">Daily Wellness Tracking</span>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+                  Daily <span className="gradient-text">Journal</span>
+                </h1>
+                <p className="text-gray-600 mt-2 text-lg">Track your wellbeing and build healthy habits</p>
+              </div>
+              <Link
+                href="/dashboard"
+                className="group inline-flex items-center px-5 py-2.5 text-gray-600 hover:text-indigo-600 transition-all rounded-xl bg-white/60 backdrop-blur-sm border border-gray-100 hover:border-indigo-200 hover:shadow-lg animate-fade-in-up animation-delay-200"
+              >
+                <svg className="mr-2 w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Dashboard
+              </Link>
             </div>
           </div>
-        )}
+        </header>
 
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your journal...</p>
-            </div>
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4">
+          {/* Sync Status */}
+          <div className="mb-6 animate-fade-in-up animation-delay-100">
+            <SyncStatusIndicator status={syncStatus} onForceSync={forceSync} />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Column - Check-in Form and Trends */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Check-in Form */}
-              <section>
-                <CheckInForm
-                  existingEntry={todayEntry}
-                  onSubmit={handleSubmit}
-                  isLoading={isSubmitting}
-                />
-              </section>
 
-              {/* Burnout Alert */}
-              {burnoutScore && (
-                <section>
-                  <BurnoutAlert
-                    score={burnoutScore.score}
-                    riskLevel={burnoutScore.riskLevel}
-                    contributingFactors={burnoutScore.contributingFactors}
-                  />
-                </section>
-              )}
-
-              {/* Trends Chart */}
-              <section>
-                <TrendsChart
-                  entries={entries}
-                  period={period}
-                  onPeriodChange={setPeriod}
-                />
-              </section>
-
-              {/* Recent Entries */}
-              <section className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Entries</h3>
-                
-                {entries.length === 0 ? (
-                  <div className="text-center py-8">
-                    <span className="text-4xl mb-3 block">📝</span>
-                    <p className="text-gray-600">No entries yet. Start your first check-in above!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {entries.slice(0, 7).map((entry) => (
-                      <div 
-                        key={entry.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium text-gray-700 w-24">
-                            {formatDate(entry.entryDate)}
-                          </span>
-                          <div className="flex items-center gap-3 text-sm">
-                            <span className="flex items-center gap-1">
-                              <span className="text-blue-500">😊</span>
-                              <span className="text-gray-600">{entry.mood}</span>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span className="text-green-500">⚡</span>
-                              <span className="text-gray-600">{entry.energy}</span>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span className="text-red-500">😰</span>
-                              <span className="text-gray-600">{entry.stress}</span>
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {entry.mood >= 70 && entry.energy >= 70 && entry.stress <= 30 && (
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                              Great day!
-                            </span>
-                          )}
-                          {entry.stress >= 70 && (
-                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
-                              High stress
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            </div>
-
-            {/* Sidebar - Action Plan */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                <ActionPlanWidget
-                  actions={actions}
-                  completionStats={completionStats || undefined}
-                  onComplete={handleCompleteAction}
-                  onRefresh={handleRefreshActions}
-                  isLoading={isLoading}
-                />
+          {/* Error Banner */}
+          {error && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 animate-scale-in">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-rose-100 rounded-xl">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span>{error}</span>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center animate-fade-in">
+                <div className="relative w-16 h-16 mx-auto mb-6">
+                  <div className="absolute inset-0 rounded-full border-4 border-indigo-100"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin"></div>
+                </div>
+                <p className="text-gray-600 text-lg">Loading your journal...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Column */}
+              <div className="lg:col-span-2 space-y-8">
+                {/* Check-in Form */}
+                <section className="animate-fade-in-up animation-delay-200">
+                  <CheckInForm
+                    existingEntry={todayEntry}
+                    onSubmit={handleSubmit}
+                    isLoading={isSubmitting}
+                  />
+                </section>
+
+                {/* Burnout Alert */}
+                {burnoutScore && (
+                  <section className="animate-fade-in-up animation-delay-300">
+                    <BurnoutAlert
+                      score={burnoutScore.score}
+                      riskLevel={burnoutScore.riskLevel}
+                      contributingFactors={burnoutScore.contributingFactors}
+                    />
+                  </section>
+                )}
+
+                {/* Trends Chart */}
+                <section className="animate-fade-in-up animation-delay-400">
+                  <TrendsChart
+                    entries={entries}
+                    period={period}
+                    onPeriodChange={setPeriod}
+                  />
+                </section>
+
+                {/* Recent Entries */}
+                <section className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg shadow-gray-100/50 border border-white/50 p-6 animate-fade-in-up animation-delay-500">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                    <span className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl">📅</span>
+                    Recent Entries
+                  </h3>
+                  
+                  {entries.length === 0 ? (
+                    <div className="text-center py-12">
+                      <span className="text-5xl mb-4 block">📝</span>
+                      <p className="text-gray-600 text-lg">No entries yet. Start your first check-in above!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {entries.slice(0, 7).map((entry, i) => (
+                        <div 
+                          key={entry.id}
+                          className="group flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl hover:bg-white hover:shadow-lg hover:shadow-indigo-100/50 transition-all duration-300"
+                          style={{ animationDelay: `${i * 50}ms` }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm font-semibold text-gray-700 w-28">
+                              {formatDate(entry.entryDate)}
+                            </span>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 rounded-full">
+                                <span>😊</span>
+                                <span className="font-medium text-blue-700">{entry.mood}</span>
+                              </span>
+                              <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 rounded-full">
+                                <span>⚡</span>
+                                <span className="font-medium text-emerald-700">{entry.energy}</span>
+                              </span>
+                              <span className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 rounded-full">
+                                <span>😰</span>
+                                <span className="font-medium text-rose-700">{entry.stress}</span>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {entry.mood >= 70 && entry.energy >= 70 && entry.stress <= 30 && (
+                              <span className="px-3 py-1 bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 text-xs font-medium rounded-full">
+                                ✨ Great day!
+                              </span>
+                            )}
+                            {entry.stress >= 70 && (
+                              <span className="px-3 py-1 bg-gradient-to-r from-rose-100 to-orange-100 text-rose-700 text-xs font-medium rounded-full">
+                                ⚠️ High stress
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Sidebar */}
+              <div className="lg:col-span-1 animate-fade-in-up animation-delay-300">
+                <div className="sticky top-24">
+                  <ActionPlanWidget
+                    actions={actions}
+                    completionStats={completionStats || undefined}
+                    onComplete={handleCompleteAction}
+                    onRefresh={handleRefreshActions}
+                    isLoading={isLoading}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

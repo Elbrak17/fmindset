@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -14,6 +15,7 @@ interface PostCardProps {
   replyCount: number;
   createdAt: string;
   isOwn?: boolean;
+  onDelete?: (id: string) => void;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -41,8 +43,50 @@ export function PostCard({
   replyCount,
   createdAt,
   isOwn,
+  onDelete,
 }: PostCardProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const truncatedBody = body.length > 150 ? body.substring(0, 150) + '...' : body;
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const odId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
+      const response = await fetch(`/api/community/posts/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ odId }),
+      });
+
+      if (response.ok) {
+        onDelete?.(id);
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to delete post');
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const cancelDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(false);
+  };
 
   return (
     <Link href={`/community/post/${id}`}>
@@ -67,9 +111,42 @@ export function PostCard({
               </span>
             )}
           </div>
-          <span className="text-xs text-gray-500 whitespace-nowrap">
-            {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 whitespace-nowrap">
+              {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+            </span>
+            {isOwn && (
+              <div className="flex items-center gap-1">
+                {showDeleteConfirm ? (
+                  <>
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="px-2 py-1 text-xs font-medium text-white bg-red-500 rounded hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {isDeleting ? '...' : 'Confirm'}
+                    </button>
+                    <button
+                      onClick={cancelDelete}
+                      className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleDelete}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete post"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Category Badge */}

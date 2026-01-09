@@ -52,9 +52,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     const archetype = determineArchetype(scores);
     const recommendations = getRecommendations(scores, archetype.name);
 
-    // Generate user ID (anonymous or from session)
-    // In production, this would come from NextAuth session
-    const userId = 'anonymous-' + crypto.randomUUID();
+    // Get user ID from request body or generate anonymous one
+    // The client should send the persistent odId
+    const { odId } = body;
+    const userId = odId || 'anonymous-' + crypto.randomUUID();
 
     // Save assessment to PostgreSQL database
     try {

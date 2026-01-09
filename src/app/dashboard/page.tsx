@@ -25,6 +25,12 @@ interface ActionItem {
   isCompleted: boolean;
 }
 
+interface AssessmentStats {
+  count: number;
+  lastAssessment: string | null;
+  archetype: string | null;
+}
+
 // Risk level colors and labels
 const riskLevelConfig = {
   low: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Low Risk', icon: '✅', gradient: 'from-emerald-500 to-green-500' },
@@ -37,13 +43,27 @@ export default function Dashboard() {
   const [todayEntry, setTodayEntry] = useState<JournalEntry | null>(null);
   const [burnoutScore, setBurnoutScore] = useState<BurnoutScore | null>(null);
   const [todayActions, setTodayActions] = useState<ActionItem[]>([]);
+  const [assessmentStats, setAssessmentStats] = useState<AssessmentStats | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const odId = 'demo-user-123';
+  const [odId, setOdId] = useState<string>('');
 
   useEffect(() => {
-    async function fetchJournalData() {
+    // Get or create odId from localStorage
+    let storedOdId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
+    if (!storedOdId) {
+      storedOdId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('odId', storedOdId);
+      localStorage.setItem('fmindset_odId', storedOdId);
+    }
+    setOdId(storedOdId);
+  }, []);
+
+  useEffect(() => {
+    if (!odId) return;
+
+    async function fetchDashboardData() {
       try {
+        // Fetch journal data
         const historyRes = await fetch(`/api/journal/history?odId=${odId}&days=1`);
         if (historyRes.ok) {
           const historyData = await historyRes.json();
@@ -54,6 +74,7 @@ export default function Dashboard() {
           setTodayEntry(todayEntryData || null);
         }
 
+        // Fetch burnout score
         const burnoutRes = await fetch(`/api/burnout/score?odId=${odId}`);
         if (burnoutRes.ok) {
           const burnoutData = await burnoutRes.json();
@@ -62,20 +83,28 @@ export default function Dashboard() {
           }
         }
 
+        // Fetch daily actions
         const actionsRes = await fetch(`/api/actions/daily?odId=${odId}`);
         if (actionsRes.ok) {
           const actionsData = await actionsRes.json();
           setTodayActions(actionsData.actions || []);
         }
+
+        // Fetch assessment stats
+        const statsRes = await fetch(`/api/assessment/stats?odId=${odId}`);
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setAssessmentStats(statsData);
+        }
       } catch (error) {
-        console.error('Error fetching journal data:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchJournalData();
-  }, []);
+    fetchDashboardData();
+  }, [odId]);
 
   const completedActions = todayActions.filter(a => a.isCompleted).length;
   const totalActions = todayActions.length;
@@ -311,9 +340,30 @@ export default function Dashboard() {
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {[
-              { icon: '✅', label: 'Assessments Completed', value: '0', color: 'blue', delay: '0' },
-              { icon: '📈', label: 'Growth Score', value: '--', color: 'green', delay: '100' },
-              { icon: '🕐', label: 'Last Assessment', value: '--', color: 'purple', delay: '200' },
+              { 
+                icon: '✅', 
+                label: 'Assessments Completed', 
+                value: loading ? '--' : (assessmentStats?.count?.toString() || '0'), 
+                color: 'blue', 
+                delay: '0' 
+              },
+              { 
+                icon: '🎭', 
+                label: 'Current Archetype', 
+                value: loading ? '--' : (assessmentStats?.archetype || 'Not assessed'), 
+                color: 'green', 
+                delay: '100',
+                isSmallText: true
+              },
+              { 
+                icon: '🕐', 
+                label: 'Last Assessment', 
+                value: loading ? '--' : (assessmentStats?.lastAssessment 
+                  ? new Date(assessmentStats.lastAssessment).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'Never'), 
+                color: 'purple', 
+                delay: '200' 
+              },
             ].map((stat, i) => (
               <div 
                 key={i}
@@ -326,7 +376,7 @@ export default function Dashboard() {
                   </div>
                   <div className="ml-5">
                     <p className="text-sm font-medium text-gray-500 mb-1">{stat.label}</p>
-                    <p className="text-3xl font-bold gradient-text">{stat.value}</p>
+                    <p className={`font-bold gradient-text ${stat.isSmallText ? 'text-lg' : 'text-3xl'}`}>{stat.value}</p>
                   </div>
                 </div>
               </div>
@@ -335,56 +385,94 @@ export default function Dashboard() {
           
           {/* Action Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            {[
-              {
-                icon: '📝',
-                title: 'Take Assessment',
-                desc: 'Complete your psychological assessment to discover your founder profile and get personalized insights.',
-                href: '/assessment/quiz',
-                gradient: 'from-blue-500 to-indigo-600',
-                btnText: 'Start Assessment',
-              },
-              {
-                icon: '📊',
-                title: 'View Results',
-                desc: 'Review your latest assessment results, archetype classification, and AI-powered insights.',
-                href: '/assessment/results',
-                gradient: 'from-emerald-500 to-green-600',
-                btnText: 'View Results',
-              },
-              {
-                icon: '✍️',
-                title: 'Daily Journal',
-                desc: 'Track your mood, energy, and stress levels. Get personalized actions to prevent burnout.',
-                href: '/dashboard/journal',
-                gradient: 'from-indigo-500 to-purple-600',
-                btnText: 'Open Journal',
-              },
-            ].map((card, i) => (
-              <div 
-                key={i}
-                className="group relative bg-white/90 backdrop-blur-sm rounded-3xl p-8 border border-white/50 shadow-lg shadow-gray-100/50 hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 hover:-translate-y-2 animate-fade-in-up"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative text-center">
-                  <div className={`inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${card.gradient} rounded-3xl mb-6 text-4xl shadow-xl group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500`}>
-                    {card.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{card.title}</h3>
-                  <p className="text-gray-600 mb-8 leading-relaxed">{card.desc}</p>
-                  <Link
-                    href={card.href}
-                    className={`inline-flex items-center justify-center w-full px-6 py-4 bg-gradient-to-r ${card.gradient} text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-[1.02]`}
-                  >
-                    {card.btnText}
-                    <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </Link>
+            {/* Take Assessment Card - Dynamic based on assessment history */}
+            <div 
+              className="group relative bg-white/90 backdrop-blur-sm rounded-3xl p-8 border border-white/50 shadow-lg shadow-gray-100/50 hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 hover:-translate-y-2 animate-fade-in-up"
+            >
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative text-center">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl mb-6 text-4xl shadow-xl group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500">
+                  📝
                 </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  {assessmentStats && assessmentStats.count > 0 ? 'Retake Assessment' : 'Take Assessment'}
+                </h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  {assessmentStats && assessmentStats.count > 0 
+                    ? `You've completed ${assessmentStats.count} assessment${assessmentStats.count > 1 ? 's' : ''}. Want to see how you've evolved?`
+                    : 'Complete your psychological assessment to discover your founder profile and get personalized insights.'
+                  }
+                </p>
+                <Link
+                  href="/assessment/quiz"
+                  className="inline-flex items-center justify-center w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-[1.02]"
+                >
+                  {assessmentStats && assessmentStats.count > 0 ? 'Retake Assessment' : 'Start Assessment'}
+                  <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
               </div>
-            ))}
+            </div>
+
+            {/* View Results Card */}
+            <div 
+              className="group relative bg-white/90 backdrop-blur-sm rounded-3xl p-8 border border-white/50 shadow-lg shadow-gray-100/50 hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 hover:-translate-y-2 animate-fade-in-up"
+              style={{ animationDelay: '100ms' }}
+            >
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative text-center">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl mb-6 text-4xl shadow-xl group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500">
+                  📊
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">View Results</h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  {assessmentStats && assessmentStats.count > 0 
+                    ? 'Review your latest assessment results, archetype classification, and AI-powered insights.'
+                    : 'Complete an assessment first to see your results and personalized insights.'
+                  }
+                </p>
+                <Link
+                  href="/assessment/results"
+                  className={`inline-flex items-center justify-center w-full px-6 py-4 font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-[1.02] ${
+                    assessmentStats && assessmentStats.count > 0 
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  View Results
+                  <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+
+            {/* Daily Journal Card */}
+            <div 
+              className="group relative bg-white/90 backdrop-blur-sm rounded-3xl p-8 border border-white/50 shadow-lg shadow-gray-100/50 hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 hover:-translate-y-2 animate-fade-in-up"
+              style={{ animationDelay: '200ms' }}
+            >
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative text-center">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl mb-6 text-4xl shadow-xl group-hover:scale-110 group-hover:shadow-2xl transition-all duration-500">
+                  ✍️
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Daily Journal</h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  Track your mood, energy, and stress levels. Get personalized actions to prevent burnout.
+                </p>
+                <Link
+                  href="/dashboard/journal"
+                  className="inline-flex items-center justify-center w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-[1.02]"
+                >
+                  Open Journal
+                  <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Info Banner */}

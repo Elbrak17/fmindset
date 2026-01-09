@@ -29,6 +29,9 @@ interface QuizPageState {
   error: string | null;
   isOffline: boolean;
   hasRestoredFromBackup: boolean;
+  hasExistingAssessment: boolean;
+  existingAssessmentCount: number;
+  showRetakeConfirm: boolean;
 }
 
 /**
@@ -55,6 +58,9 @@ export default function QuizPage() {
     error: null,
     isOffline: false,
     hasRestoredFromBackup: false,
+    hasExistingAssessment: false,
+    existingAssessmentCount: 0,
+    showRetakeConfirm: false,
   });
 
   /**
@@ -156,6 +162,9 @@ export default function QuizPage() {
         // Check for existing anonymous user ID in session storage
         const storedUserId = sessionStorage.getItem(STORAGE_KEYS.USER_ID);
         
+        // Also check localStorage for persistent user ID
+        const persistentUserId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
+        
         if (storedUserId) {
           // Restore previous progress from session storage
           const storedAnswers = sessionStorage.getItem(STORAGE_KEYS.ANSWERS);
@@ -177,6 +186,9 @@ export default function QuizPage() {
             error: null,
             isOffline: typeof window !== 'undefined' && !navigator.onLine,
             hasRestoredFromBackup: false,
+            hasExistingAssessment: false,
+            existingAssessmentCount: 0,
+            showRetakeConfirm: false,
           });
         } else {
           // No session - check localStorage for backup (session expiry scenario)
@@ -201,14 +213,36 @@ export default function QuizPage() {
               error: null,
               isOffline: typeof window !== 'undefined' && !navigator.onLine,
               hasRestoredFromBackup: true,
+              hasExistingAssessment: false,
+              existingAssessmentCount: 0,
+              showRetakeConfirm: false,
             });
           } else {
-            // No session and no backup - show landing page
+            // No session and no backup - check if user has existing assessments
+            let hasExisting = false;
+            let existingCount = 0;
+            
+            if (persistentUserId) {
+              try {
+                const statsRes = await fetch(`/api/assessment/stats?odId=${persistentUserId}`);
+                if (statsRes.ok) {
+                  const stats = await statsRes.json();
+                  hasExisting = stats.count > 0;
+                  existingCount = stats.count;
+                }
+              } catch (e) {
+                console.error('Failed to fetch assessment stats:', e);
+              }
+            }
+            
             setState(prev => ({
               ...prev,
               isLoading: false,
               hasSession: false,
               isOffline: typeof window !== 'undefined' && !navigator.onLine,
+              hasExistingAssessment: hasExisting,
+              existingAssessmentCount: existingCount,
+              showRetakeConfirm: hasExisting,
             }));
           }
         }
@@ -233,8 +267,13 @@ export default function QuizPage() {
    */
   const handleStartAssessment = useCallback(() => {
     try {
-      // Generate anonymous user ID
-      const anonymousUserId = 'anonymous-' + crypto.randomUUID();
+      // Use existing persistent ID or generate new one
+      let anonymousUserId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
+      if (!anonymousUserId) {
+        anonymousUserId = 'anonymous-' + crypto.randomUUID();
+        localStorage.setItem('odId', anonymousUserId);
+        localStorage.setItem('fmindset_odId', anonymousUserId);
+      }
       
       // Store in session storage
       sessionStorage.setItem(STORAGE_KEYS.USER_ID, anonymousUserId);
@@ -253,6 +292,9 @@ export default function QuizPage() {
         error: null,
         isOffline: typeof window !== 'undefined' && !navigator.onLine,
         hasRestoredFromBackup: false,
+        hasExistingAssessment: false,
+        existingAssessmentCount: 0,
+        showRetakeConfirm: false,
       });
     } catch (error) {
       console.error('Failed to create anonymous user:', error);
@@ -306,6 +348,9 @@ export default function QuizPage() {
       throw new Error('You\'re offline. Progress saved locally. Please try again when online.');
     }
 
+    // Get persistent odId for saving to database
+    const persistentOdId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId') || state.userId;
+
     // Create AbortController for timeout handling
     // Requirements: 7.7
     const controller = new AbortController();
@@ -317,7 +362,7 @@ export default function QuizPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, odId: persistentOdId }),
         signal: controller.signal,
       });
 
@@ -405,6 +450,109 @@ export default function QuizPage() {
 
   // Landing page - no session
   if (!state.hasSession) {
+    // Show retake confirmation if user has existing assessments
+    if (state.showRetakeConfirm && state.hasExistingAssessment) {
+      return (
+        <div className="min-h-screen gradient-bg">
+          {/* Header */}
+          <header className="pt-12 pb-8 px-4">
+            <div className="max-w-5xl mx-auto text-center">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold gradient-text mb-4 animate-fade-in">
+                FMindset Assessment
+              </h1>
+              <p className="text-gray-600 text-xl md:text-2xl animate-slide-in-left">
+                Track your founder psychology evolution
+              </p>
+            </div>
+          </header>
+
+          {/* Main content */}
+          <main className="px-4 py-12">
+            <div className="max-w-3xl mx-auto">
+              {/* Retake card */}
+              <div className="card p-10 md:p-12 mb-12 animate-scale-in">
+                <div className="text-center mb-12">
+                  <div className="text-8xl mb-8 animate-bounce-gentle">🔄</div>
+                  <h2 className="text-3xl md:text-4xl font-semibold text-gray-800 mb-6">
+                    Retake Your Assessment?
+                  </h2>
+                  <p className="text-gray-600 leading-relaxed text-lg mb-4">
+                    You&apos;ve already completed <span className="font-bold text-indigo-600">{state.existingAssessmentCount}</span> assessment{state.existingAssessmentCount > 1 ? 's' : ''}.
+                  </p>
+                  <p className="text-gray-600 leading-relaxed text-lg">
+                    Taking the assessment again can help you track how your founder psychology 
+                    evolves over time. Your previous results will be preserved.
+                  </p>
+                </div>
+
+                {/* Benefits of retaking */}
+                <div className="grid gap-4 mb-12">
+                  <div className="flex items-start gap-4 animate-slide-in-left">
+                    <span className="text-indigo-500 text-2xl">📈</span>
+                    <div>
+                      <p className="font-semibold text-gray-800 text-lg">Track Your Growth</p>
+                      <p className="text-gray-600">
+                        See how your psychological profile changes as you grow as a founder
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
+                    <span className="text-indigo-500 text-2xl">🎯</span>
+                    <div>
+                      <p className="font-semibold text-gray-800 text-lg">Updated Insights</p>
+                      <p className="text-gray-600">
+                        Get fresh AI-powered recommendations based on your current state
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 animate-slide-in-left" style={{animationDelay: '0.2s'}}>
+                    <span className="text-indigo-500 text-2xl">🔒</span>
+                    <div>
+                      <p className="font-semibold text-gray-800 text-lg">History Preserved</p>
+                      <p className="text-gray-600">
+                        All your previous assessments are saved for comparison
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={handleStartAssessment}
+                    className="btn-primary flex-1 text-xl py-5"
+                  >
+                    Yes, Retake Assessment
+                  </button>
+                  <button
+                    onClick={() => router.push('/assessment/results')}
+                    className="flex-1 text-xl py-5 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-indigo-300 hover:shadow-lg transition-all"
+                  >
+                    View Last Results
+                  </button>
+                </div>
+
+                <p className="text-center text-gray-500 mt-6 text-lg">
+                  Takes about 5-7 minutes to complete
+                </p>
+              </div>
+
+              {/* Trust indicators */}
+              <div className="text-center text-gray-500 animate-fade-in">
+                <p className="flex items-center justify-center text-lg">
+                  <svg className="w-6 h-6 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                  Your responses are confidential and secure
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    // First time user - show regular landing page
     return (
       <div className="min-h-screen gradient-bg">
         {/* Header */}

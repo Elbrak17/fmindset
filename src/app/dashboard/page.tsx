@@ -63,13 +63,19 @@ export default function Dashboard() {
 
     async function fetchDashboardData() {
       try {
-        // Fetch journal data
-        const historyRes = await fetch(`/api/journal/history?odId=${odId}&days=1`);
+        // Fetch journal data - get more days to ensure we catch today's entry
+        const historyRes = await fetch(`/api/journal/history?odId=${odId}&days=7`);
         if (historyRes.ok) {
           const historyData = await historyRes.json();
-          const today = new Date().toISOString().split('T')[0];
+          // Get today's date in local timezone (YYYY-MM-DD format)
+          const today = new Date();
+          const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+          
+          // Also check UTC date in case server uses UTC
+          const todayUTC = new Date().toISOString().split('T')[0];
+          
           const todayEntryData = historyData.entries?.find(
-            (e: JournalEntry) => e.entryDate === today
+            (e: JournalEntry) => e.entryDate === todayLocal || e.entryDate === todayUTC
           );
           setTodayEntry(todayEntryData || null);
         }
@@ -208,12 +214,20 @@ export default function Dashboard() {
                           </div>
                         </div>
                       ))}
-                      <p className="text-xs text-emerald-600 mt-3 flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Completed today
-                      </p>
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs text-emerald-600 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Completed today
+                        </p>
+                        <Link
+                          href="/dashboard/journal"
+                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                        >
+                          View details →
+                        </Link>
+                      </div>
                     </div>
                   ) : (
                     <div>

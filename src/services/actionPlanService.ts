@@ -26,8 +26,6 @@ import {
 const MIN_DAILY_ACTIONS = 3;
 const MAX_DAILY_ACTIONS = 5;
 const HIGH_DIMENSION_THRESHOLD = 70;
-const LOW_JOURNAL_THRESHOLD = 40;
-const HIGH_STRESS_THRESHOLD = 70;
 
 // Completion stats interface
 export interface CompletionStats {

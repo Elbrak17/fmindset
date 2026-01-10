@@ -154,6 +154,7 @@ export const GENERAL_WELLNESS_ACTIONS: ActionTemplate[] = [
 
 /**
  * Get all available actions for a specific dimension
+ * Used by tests
  */
 export function getActionsForDimension(dimension: Dimension): ActionTemplate[] {
   return DIMENSION_ACTIONS[dimension] || [];
@@ -161,6 +162,7 @@ export function getActionsForDimension(dimension: Dimension): ActionTemplate[] {
 
 /**
  * Get archetype-specific actions
+ * Used by tests
  */
 export function getActionsForArchetype(archetype: ArchetypeName): ActionTemplate[] {
   return ARCHETYPE_ACTIONS[archetype] || [];

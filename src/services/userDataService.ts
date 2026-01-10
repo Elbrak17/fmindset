@@ -19,7 +19,6 @@ import {
 
 // Constants
 const DATA_RETENTION_DAYS = 365; // 1 year
-const PSEUDONYM_REGENERATION_COOLDOWN_DAYS = 30;
 
 /**
  * Generate a random pseudonym

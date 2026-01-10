@@ -2,22 +2,22 @@ import Link from 'next/link'
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-indigo-50/50 to-purple-50/50" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100/40 via-transparent to-transparent" />
-        
-        {/* Floating Orbs */}
-        <div className="absolute top-20 left-[10%] w-72 h-72 bg-gradient-to-br from-indigo-300/30 to-purple-300/30 rounded-full blur-3xl animate-blob" />
-        <div className="absolute top-40 right-[10%] w-96 h-96 bg-gradient-to-br from-purple-300/20 to-pink-300/20 rounded-full blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute bottom-20 left-[30%] w-80 h-80 bg-gradient-to-br from-cyan-300/20 to-indigo-300/20 rounded-full blur-3xl animate-blob animation-delay-1000" />
-        
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        
-        <div className="relative container mx-auto px-4 py-20 lg:py-32">
+    <div className="min-h-screen relative">
+      {/* Global Background - applies to entire page */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-indigo-50/50 to-purple-50/50" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100/40 via-transparent to-transparent" />
+      <div className="fixed inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      
+      {/* Floating Orbs - fixed position */}
+      <div className="fixed top-20 left-[10%] w-72 h-72 bg-gradient-to-br from-indigo-300/30 to-purple-300/30 rounded-full blur-3xl animate-blob pointer-events-none" />
+      <div className="fixed top-40 right-[10%] w-96 h-96 bg-gradient-to-br from-purple-300/20 to-pink-300/20 rounded-full blur-3xl animate-blob animation-delay-2000 pointer-events-none" />
+      <div className="fixed bottom-20 left-[30%] w-80 h-80 bg-gradient-to-br from-cyan-300/20 to-indigo-300/20 rounded-full blur-3xl animate-blob animation-delay-1000 pointer-events-none" />
+
+      {/* Content wrapper */}
+      <div className="relative z-10">
+        {/* Hero Section */}
+        <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+          <div className="relative container mx-auto px-4 py-20 lg:py-32">
           <div className="max-w-5xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/80 backdrop-blur-sm border border-indigo-100 shadow-lg shadow-indigo-500/5 mb-8 animate-fade-in-down">
@@ -102,13 +102,11 @@ export default function Home() {
           </div>
         </div>
         
-      </section>
+        </section>
 
-      {/* Stats Section - Light Theme */}
-      <section className="py-20 bg-gradient-to-b from-indigo-50/50 to-purple-50/50 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-100/50 via-transparent to-transparent" />
-        
-        <div className="relative container mx-auto px-4">
+        {/* Stats Section */}
+        <section className="py-20 relative">
+          <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               The Silent Crisis of Founder Mental Health
@@ -133,13 +131,11 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* How It Works */}
-      <section className="py-24 bg-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-        
-        <div className="container mx-auto px-4">
+        {/* How It Works */}
+        <section className="py-24 relative">
+          <div className="container mx-auto px-4">
           <div className="text-center mb-20">
             <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-semibold mb-4">
               Simple Process
@@ -159,11 +155,11 @@ export default function Home() {
               { step: '03', icon: '🤖', title: 'Get AI Insights', desc: 'Receive personalized recommendations and actionable advice from our AI psychologist.', color: 'pink' },
             ].map((item, i) => (
               <div key={i} className="group relative">
-                <div className="relative p-8 rounded-3xl bg-gradient-to-b from-gray-50 to-white border border-gray-100 hover:border-gray-200 hover:shadow-xl hover:shadow-gray-100/50 transition-all duration-500">
+                <div className="relative p-8 rounded-3xl bg-white/80 backdrop-blur-sm border border-white/50 shadow-lg shadow-gray-100/50 hover:shadow-xl hover:shadow-indigo-100/50 transition-all duration-500">
                   <span className={`absolute -top-4 -right-4 w-12 h-12 rounded-2xl bg-${item.color}-100 flex items-center justify-center text-${item.color}-600 font-bold text-sm shadow-lg`}>
                     {item.step}
                   </span>
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform duration-500">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform duration-500">
                     {item.icon}
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
@@ -173,13 +169,66 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* 7 Dimensions */}
-      <section className="py-24 bg-gradient-to-b from-indigo-50/50 to-purple-50/50 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-100/50 via-transparent to-transparent" />
-        
-        <div className="relative container mx-auto px-4">
+        {/* Tech Stack / Powered By */}
+        <section className="py-16 relative">
+          <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-semibold mb-4 border border-indigo-100">
+              🔧 Technical Architecture
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Powered By Modern AI
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Built with cutting-edge technology for accurate psychological insights
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[
+              { 
+                icon: '🧠', 
+                title: 'Groq LLaMA 3.3 70B', 
+                desc: 'Ultra-fast inference LLM for real-time psychological analysis and personalized insights generation',
+                tag: 'AI Model'
+              },
+              { 
+                icon: '🗄️', 
+                title: 'Neon PostgreSQL', 
+                desc: 'Serverless database with Drizzle ORM for secure, scalable storage of anonymous assessment data',
+                tag: 'Database'
+              },
+              { 
+                icon: '⚡', 
+                title: 'Next.js 15 + Vercel', 
+                desc: 'React Server Components with edge deployment for instant global performance',
+                tag: 'Framework'
+              },
+            ].map((item, i) => (
+              <div key={i} className="group p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/50 shadow-lg shadow-gray-100/50 hover:shadow-xl hover:shadow-indigo-100/50 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-3xl">{item.icon}</span>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-600 rounded-full">{item.tag}</span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-10 text-center">
+            <p className="text-sm text-gray-500">
+              Assessment methodology based on validated psychological research including Clance Imposter Phenomenon Scale and Maslach Burnout Inventory frameworks
+            </p>
+          </div>
+        </div>
+        </section>
+
+        {/* 7 Dimensions */}
+        <section className="py-24 relative">
+          <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <span className="inline-block px-4 py-1.5 rounded-full bg-white text-indigo-600 text-sm font-semibold mb-4 shadow-sm">
               Comprehensive Analysis
@@ -210,11 +259,11 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* 8 Archetypes */}
-      <section className="py-24 bg-white relative">
-        <div className="container mx-auto px-4">
+        {/* 8 Archetypes */}
+        <section className="py-24 relative">
+          <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <span className="inline-block px-4 py-1.5 rounded-full bg-purple-50 text-purple-600 text-sm font-semibold mb-4">
               Personality Types
@@ -243,7 +292,7 @@ export default function Home() {
                 className={`group relative p-6 rounded-2xl text-center transition-all duration-300 hover:scale-105 ${
                   arch.special 
                     ? 'bg-gradient-to-br from-rose-50 to-orange-50 border-2 border-rose-200' 
-                    : 'bg-gray-50 border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50'
+                    : 'bg-white/80 backdrop-blur-sm border border-white/50 shadow-lg shadow-gray-100/50 hover:shadow-xl hover:shadow-indigo-100/50'
                 }`}
               >
                 <span className="text-4xl mb-3 block group-hover:scale-110 transition-transform duration-300">{arch.icon}</span>
@@ -257,56 +306,57 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+        </section>
 
-      {/* Disclaimer */}
-      <section className="py-8 bg-amber-50 border-y border-amber-100">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center flex items-center justify-center gap-3">
-            <span className="text-2xl">⚠️</span>
-            <p className="text-amber-800 text-sm">
-              <span className="font-semibold">Important:</span> FMindset is a self-reflection tool, not a medical diagnosis. 
-              If you&apos;re experiencing severe distress, please contact a mental health professional.
-            </p>
+        {/* Disclaimer */}
+        <section className="py-8 bg-amber-50/80 backdrop-blur-sm border-y border-amber-100">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center flex items-center justify-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <p className="text-amber-800 text-sm">
+                <span className="font-semibold">Important:</span> FMindset is a self-reflection tool, not a medical diagnosis. 
+                If you&apos;re experiencing severe distress, please contact a mental health professional.
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Final CTA */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent" />
-        
-        {/* Animated shapes */}
-        <div className="absolute top-10 left-10 w-20 h-20 border border-white/20 rounded-full animate-pulse" />
-        <div className="absolute bottom-10 right-10 w-32 h-32 border border-white/10 rounded-full animate-pulse animation-delay-1000" />
-        <div className="absolute top-1/2 left-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping" />
-        <div className="absolute top-1/3 right-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping animation-delay-500" />
-        
-        <div className="relative container mx-auto px-4 text-center">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Ready to Understand
-              <span className="block">Yourself Better?</span>
-            </h2>
-            <p className="text-indigo-100 text-lg md:text-xl mb-10 max-w-xl mx-auto">
-              Join founders who have gained valuable insights about their psychological patterns.
-            </p>
-            <Link
-              href="/assessment/quiz"
-              className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold text-indigo-600 bg-white rounded-2xl shadow-2xl shadow-black/20 hover:shadow-black/30 transform hover:scale-105 transition-all duration-300"
-            >
-              Start Your Free Assessment
-              <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
-            <p className="mt-6 text-indigo-200 text-sm">
-              Takes only 5 minutes • 100% anonymous • Instant results
-            </p>
+        {/* Final CTA */}
+        <section className="py-24 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent" />
+          
+          {/* Animated shapes */}
+          <div className="absolute top-10 left-10 w-20 h-20 border border-white/20 rounded-full animate-pulse" />
+          <div className="absolute bottom-10 right-10 w-32 h-32 border border-white/10 rounded-full animate-pulse animation-delay-1000" />
+          <div className="absolute top-1/2 left-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping" />
+          <div className="absolute top-1/3 right-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping animation-delay-500" />
+          
+          <div className="relative container mx-auto px-4 text-center">
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                Ready to Understand
+                <span className="block">Yourself Better?</span>
+              </h2>
+              <p className="text-indigo-100 text-lg md:text-xl mb-10 max-w-xl mx-auto">
+                Join founders who have gained valuable insights about their psychological patterns.
+              </p>
+              <Link
+                href="/assessment/quiz"
+                className="group inline-flex items-center justify-center px-10 py-5 text-lg font-semibold text-indigo-600 bg-white rounded-2xl shadow-2xl shadow-black/20 hover:shadow-black/30 transform hover:scale-105 transition-all duration-300"
+              >
+                Start Your Free Assessment
+                <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+              <p className="mt-6 text-indigo-200 text-sm">
+                Takes only 5 minutes • 100% anonymous • Instant results
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   )
 }

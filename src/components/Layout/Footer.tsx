@@ -91,6 +91,16 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-gray-200">
+          {/* Hackathon Badge */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-full border border-indigo-100">
+              <span className="text-lg">🏆</span>
+              <span className="text-sm font-medium text-indigo-700">
+                Built for <span className="font-bold">Alameda Hacks 2025</span> — Social Good Track
+              </span>
+            </div>
+          </div>
+          
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-500">
               © {new Date().getFullYear()} FMindset. Built with <span className="text-red-500">❤️</span> for founders who feel alone.

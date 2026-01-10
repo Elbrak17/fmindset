@@ -105,9 +105,9 @@ export default function Home() {
         </section>
 
         {/* Stats Section */}
-        <section className="py-20 relative">
+        <section className="py-12 relative">
           <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               The Silent Crisis of Founder Mental Health
             </h2>
@@ -134,9 +134,9 @@ export default function Home() {
         </section>
 
         {/* How It Works */}
-        <section className="py-24 relative">
+        <section className="py-16 relative">
           <div className="container mx-auto px-4">
-          <div className="text-center mb-20">
+          <div className="text-center mb-12">
             <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-semibold mb-4">
               Simple Process
             </span>
@@ -172,9 +172,9 @@ export default function Home() {
         </section>
 
         {/* Example Result - Proof of Output */}
-        <section className="py-24 relative">
+        <section className="py-16 relative">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
+            <div className="text-center mb-10">
               <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-sm font-semibold mb-4 border border-emerald-100">
                 📊 Real Output Example
               </span>
@@ -268,9 +268,9 @@ export default function Home() {
         </section>
 
         {/* Tech Stack / Powered By */}
-        <section className="py-16 relative">
+        <section className="py-12 relative">
           <div className="container mx-auto px-4">
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <span className="inline-block px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-sm font-semibold mb-4 border border-indigo-100">
               🔧 Technical Architecture
             </span>
@@ -314,7 +314,7 @@ export default function Home() {
             ))}
           </div>
           
-          <div className="mt-10 text-center">
+          <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
               Assessment methodology based on validated psychological research including Clance Imposter Phenomenon Scale and Maslach Burnout Inventory frameworks
             </p>
@@ -323,9 +323,9 @@ export default function Home() {
         </section>
 
         {/* 7 Dimensions */}
-        <section className="py-24 relative">
+        <section className="py-16 relative">
           <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <span className="inline-block px-4 py-1.5 rounded-full bg-white text-indigo-600 text-sm font-semibold mb-4 shadow-sm">
               Comprehensive Analysis
             </span>
@@ -358,9 +358,9 @@ export default function Home() {
         </section>
 
         {/* 8 Archetypes */}
-        <section className="py-24 relative">
+        <section className="py-16 relative">
           <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <span className="inline-block px-4 py-1.5 rounded-full bg-purple-50 text-purple-600 text-sm font-semibold mb-4">
               Personality Types
             </span>
@@ -405,10 +405,10 @@ export default function Home() {
         </section>
 
         {/* Intended Impact */}
-        <section className="py-20 relative">
+        <section className="py-12 relative">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-12">
+              <div className="text-center mb-8">
                 <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-sm font-semibold mb-4 border border-emerald-100">
                   🌍 Social Good
                 </span>
@@ -452,7 +452,7 @@ export default function Home() {
                 ))}
               </div>
               
-              <div className="mt-10 p-6 rounded-2xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-center">
+              <div className="mt-6 p-5 rounded-2xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 text-center">
                 <p className="text-gray-700">
                   <span className="font-semibold">Our mission:</span> Reduce founder burnout rates by providing 
                   accessible, AI-powered psychological insights that help entrepreneurs build sustainable 
@@ -477,7 +477,7 @@ export default function Home() {
         </section>
 
         {/* Final CTA */}
-        <section className="py-24 relative overflow-hidden">
+        <section className="py-16 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent" />
           

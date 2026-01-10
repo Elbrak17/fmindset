@@ -100,7 +100,7 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-3">
-            {!isQuizPage && (
+            {!isQuizPage && !isMobileMenuOpen && (
               <Link 
                 href="/assessment/quiz"
                 className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full shadow-lg shadow-indigo-500/25"
@@ -138,7 +138,7 @@ export default function Header() {
         <div className={`lg:hidden overflow-hidden transition-all duration-500 ease-out ${
           isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}>
-          <nav className="py-4 space-y-1">
+          <nav className="py-4 space-y-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-100 mb-4 px-2">
             {navLinks.map((link, index) => (
               <Link 
                 key={link.href}

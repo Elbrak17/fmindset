@@ -18,14 +18,37 @@ export default function PeersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [odId, setOdId] = useState<string | null>(null);
+  const [hasAssessment, setHasAssessment] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const storedOdId = localStorage.getItem('odId');
+    const storedOdId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
     setOdId(storedOdId);
+    
+    // Check if user has completed an assessment
+    if (storedOdId) {
+      checkAssessment(storedOdId);
+    } else {
+      setHasAssessment(false);
+      setIsLoading(false);
+    }
   }, []);
 
+  const checkAssessment = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/assessment/stats?odId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setHasAssessment(data.count > 0);
+      } else {
+        setHasAssessment(false);
+      }
+    } catch {
+      setHasAssessment(false);
+    }
+  };
+
   const fetchMatches = useCallback(async () => {
-    if (!odId) return;
+    if (!odId || !hasAssessment) return;
 
     setIsLoading(true);
     setError(null);
@@ -44,13 +67,15 @@ export default function PeersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [odId]);
+  }, [odId, hasAssessment]);
 
   useEffect(() => {
-    if (odId) {
+    if (odId && hasAssessment) {
       fetchMatches();
+    } else if (hasAssessment === false) {
+      setIsLoading(false);
     }
-  }, [odId, fetchMatches]);
+  }, [odId, hasAssessment, fetchMatches]);
 
   const handleDismiss = (matchId: string) => {
     setMatches((prev) => prev.filter((m) => m.id !== matchId));
@@ -83,11 +108,11 @@ export default function PeersPage() {
         </div>
 
         {/* No Assessment Warning */}
-        {!odId && (
+        {hasAssessment === false && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-6">
             <h3 className="font-semibold text-yellow-800 mb-2">Complete Your Assessment First</h3>
             <p className="text-yellow-700 mb-4">
-              To find peer matches, you need to complete the psychological assessment.
+              To find peer matches based on your archetype and psychological dimensions, you need to complete the assessment first.
             </p>
             <Link
               href="/assessment/quiz"

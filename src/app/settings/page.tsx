@@ -8,31 +8,37 @@ export default function SettingsPage() {
   const [pseudonymStatus, setPseudonymStatus] = useState<{
     canRegenerate: boolean;
     nextAvailableDate?: string;
+    currentPseudonym?: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    const storedOdId = localStorage.getItem('odId');
+    const storedOdId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
     setOdId(storedOdId);
     if (storedOdId) {
-      fetchPseudonymStatus(storedOdId);
+      checkPseudonymCooldown();
     }
   }, []);
 
+  const checkPseudonymCooldown = () => {
+    const currentPseudonym = localStorage.getItem('fmindset_pseudonym');
+    
+    // No cooldown - allow regeneration at will
+    setPseudonymStatus({
+      canRegenerate: true,
+      currentPseudonym: currentPseudonym || undefined,
+    });
+  };
+
   const fetchPseudonymStatus = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/user/pseudonym?odId=${userId}`);
-      const data = await response.json();
-      setPseudonymStatus(data);
-    } catch (error) {
-      console.error('Error fetching pseudonym status:', error);
-    }
+    // This is now handled client-side
+    checkPseudonymCooldown();
   };
 
   const handleRegeneratePseudonym = async () => {
-    if (!odId) return;
+    if (!odId || !pseudonymStatus?.canRegenerate) return;
     setIsLoading(true);
     setMessage(null);
 
@@ -44,8 +50,12 @@ export default function SettingsPage() {
       });
       const data = await response.json();
       if (response.ok) {
+        // Save to localStorage
+        localStorage.setItem('fmindset_pseudonym', data.pseudonym);
+        localStorage.setItem('fmindset_last_pseudonym_regen', new Date().toISOString());
+        
         setMessage({ type: 'success', text: `New pseudonym: ${data.pseudonym}` });
-        fetchPseudonymStatus(odId);
+        checkPseudonymCooldown();
       } else {
         setMessage({ type: 'error', text: data.error });
       }
@@ -183,27 +193,26 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-xl font-bold text-gray-900">Anonymous Identity</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Your pseudonym is used in the community forum. You can regenerate it once per month.
+                Your pseudonym is used in the community forum. You can regenerate it anytime.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 mt-6">
+          {pseudonymStatus?.currentPseudonym && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
+              <p className="text-sm text-gray-600 mb-1">Current pseudonym</p>
+              <p className="text-xl font-bold gradient-text">{pseudonymStatus.currentPseudonym}</p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-4">
             <button
               onClick={handleRegeneratePseudonym}
-              disabled={isLoading || !pseudonymStatus?.canRegenerate}
+              disabled={isLoading}
               className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
             >
               {isLoading ? 'Loading...' : 'Regenerate Pseudonym'}
             </button>
-            {pseudonymStatus && !pseudonymStatus.canRegenerate && (
-              <span className="text-sm text-gray-500 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Available on {new Date(pseudonymStatus.nextAvailableDate!).toLocaleDateString()}
-              </span>
-            )}
           </div>
         </section>
 

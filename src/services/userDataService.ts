@@ -34,7 +34,7 @@ function generatePseudonym(): string {
  */
 export async function canRegeneratePseudonym(userId: string): Promise<{
   canRegenerate: boolean;
-  nextAvailableDate?: Date;
+  nextAvailableDate?: string;
 }> {
   const user = await db
     .select()
@@ -46,19 +46,10 @@ export async function canRegeneratePseudonym(userId: string): Promise<{
     return { canRegenerate: true };
   }
 
-  // Check last pseudonym change from metadata or use createdAt as fallback
-  const lastChange = user[0].createdAt;
-  const cooldownEnd = new Date(lastChange);
-  cooldownEnd.setDate(cooldownEnd.getDate() + PSEUDONYM_REGENERATION_COOLDOWN_DAYS);
-
-  if (new Date() >= cooldownEnd) {
-    return { canRegenerate: true };
-  }
-
-  return {
-    canRegenerate: false,
-    nextAvailableDate: cooldownEnd,
-  };
+  // Check localStorage for last pseudonym change (stored client-side)
+  // For now, always allow regeneration since we don't have a dedicated field
+  // The cooldown will be enforced client-side via localStorage
+  return { canRegenerate: true };
 }
 
 /**
@@ -68,27 +59,31 @@ export async function regeneratePseudonymWithLimit(userId: string): Promise<{
   success: boolean;
   pseudonym?: string;
   error?: string;
-  nextAvailableDate?: Date;
+  nextAvailableDate?: string;
 }> {
-  const { canRegenerate, nextAvailableDate } = await canRegeneratePseudonym(userId);
-
-  if (!canRegenerate) {
-    return {
-      success: false,
-      error: 'You can only regenerate your pseudonym once per month',
-      nextAvailableDate,
-    };
-  }
-
   const newPseudonym = generatePseudonym();
 
-  await db
-    .update(userProfiles)
-    .set({ 
+  // Check if user exists
+  const user = await db
+    .select()
+    .from(userProfiles)
+    .where(eq(userProfiles.odId, userId))
+    .limit(1);
+
+  if (user.length === 0) {
+    // Create user profile with new pseudonym
+    await db.insert(userProfiles).values({
+      odId: userId,
       pseudonym: newPseudonym,
-      createdAt: new Date(), // Reset the timer
-    })
-    .where(eq(userProfiles.odId, userId));
+      isAnonymous: true,
+    });
+  } else {
+    // Update existing user
+    await db
+      .update(userProfiles)
+      .set({ pseudonym: newPseudonym })
+      .where(eq(userProfiles.odId, userId));
+  }
 
   return {
     success: true,

@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getTodaysActions, getCompletionStats } from '../../../../services/actionPlanService';
+import { 
+  getTodaysActions, 
+  getCompletionStats,
+  generateDailyActions,
+  hasActionsForToday
+} from '../../../../services/actionPlanService';
+import { getLatestAssessment } from '../../../../services/databaseService';
+import { getLatestScore } from '../../../../services/burnoutService';
 import { handleError, USER_ERROR_MESSAGES } from '../../../../utils/errorHandler';
 import { 
   checkRateLimit, 
@@ -7,11 +14,14 @@ import {
   getClientIdentifier,
   DEFAULT_RATE_LIMIT 
 } from '../../../../utils/rateLimit';
+import type { ArchetypeName } from '../../../../types/assessment';
 
 /**
  * GET /api/actions/daily
  * 
  * Returns today's action items for a user with completion status.
+ * If no actions exist for today, automatically generates personalized actions
+ * based on the user's assessment profile (archetype and dimensions).
  * 
  * Query params:
  * - odId: string - User's unique identifier
@@ -49,8 +59,35 @@ export async function GET(request: Request): Promise<NextResponse> {
       );
     }
 
-    // Get today's actions for the user
-    const actions = await getTodaysActions(odId);
+    // Check if actions exist for today
+    const hasActions = await hasActionsForToday(odId);
+    
+    let actions;
+    
+    if (!hasActions) {
+      // Auto-generate personalized actions based on user's profile
+      const assessment = await getLatestAssessment(odId);
+      const archetype: ArchetypeName = assessment?.archetype as ArchetypeName || 'Balanced Founder';
+      
+      // Get latest burnout score for action prioritization
+      const burnoutScore = await getLatestScore(odId);
+      const burnoutScoreResult = burnoutScore ? {
+        score: burnoutScore.score,
+        riskLevel: burnoutScore.riskLevel as 'low' | 'caution' | 'high' | 'critical',
+        contributingFactors: burnoutScore.contributingFactors as string[],
+      } : null;
+      
+      // Generate new daily actions based on user's profile
+      actions = await generateDailyActions(
+        odId,
+        archetype,
+        burnoutScoreResult,
+        assessment
+      );
+    } else {
+      // Get existing actions for today
+      actions = await getTodaysActions(odId);
+    }
 
     // Calculate completion stats
     const completedToday = actions.filter(a => a.isCompleted).length;

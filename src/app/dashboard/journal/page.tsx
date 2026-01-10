@@ -188,7 +188,7 @@ export default function JournalPage() {
       const response = await fetch('/api/actions/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actionId }),
+        body: JSON.stringify({ actionId, odId }),
       });
       if (!response.ok) throw new Error('Failed to complete action');
       setActions(prev => prev.map(a => a.id === actionId ? { ...a, isCompleted: true, completedAt: new Date() } : a));
@@ -201,24 +201,6 @@ export default function JournalPage() {
       }
     } catch (err) {
       console.error('Error completing action:', err);
-      throw err;
-    }
-  };
-
-  const handleRefreshActions = async () => {
-    if (!odId) return;
-    try {
-      const response = await fetch('/api/actions/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ odId, forceRegenerate: true }),
-      });
-      if (!response.ok) throw new Error('Failed to generate actions');
-      const result = await response.json();
-      setActions(result.actions);
-      if (result.completionStats) setCompletionStats(result.completionStats);
-    } catch (err) {
-      console.error('Error refreshing actions:', err);
       throw err;
     }
   };
@@ -395,7 +377,6 @@ export default function JournalPage() {
                     actions={actions}
                     completionStats={completionStats || undefined}
                     onComplete={handleCompleteAction}
-                    onRefresh={handleRefreshActions}
                     isLoading={isLoading}
                   />
                 </div>

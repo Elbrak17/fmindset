@@ -27,7 +27,6 @@ export interface ActionPlanWidgetProps {
   actions: ActionItem[];
   completionStats?: CompletionStats;
   onComplete: (actionId: string) => Promise<void>;
-  onRefresh?: () => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -107,11 +106,9 @@ export function ActionPlanWidget({
   actions,
   completionStats,
   onComplete,
-  onRefresh,
   isLoading = false,
 }: ActionPlanWidgetProps) {
   const [completingId, setCompletingId] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const widgetId = useId();
 
   const completedCount = actions.filter(a => a.isCompleted).length;
@@ -128,17 +125,6 @@ export function ActionPlanWidget({
       setCompletingId(null);
     }
   }, [completingId, onComplete]);
-
-  const handleRefresh = useCallback(async () => {
-    if (!onRefresh || isRefreshing) return;
-    
-    setIsRefreshing(true);
-    try {
-      await onRefresh();
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [onRefresh, isRefreshing]);
 
   // Loading state
   if (isLoading) {
@@ -167,25 +153,9 @@ export function ActionPlanWidget({
         <div className="text-center py-4">
           <span className="text-4xl mb-3 block">📋</span>
           <h3 className="font-semibold text-gray-800 mb-2">No Actions Yet</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Generate your personalized daily actions to get started.
+          <p className="text-sm text-gray-600">
+            Complete your daily check-in to receive personalized actions based on your profile.
           </p>
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="
-                px-4 py-2 bg-indigo-600 text-white rounded-lg
-                hover:bg-indigo-700 focus:outline-none focus:ring-2 
-                focus:ring-indigo-500 focus:ring-offset-2
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors duration-200
-              "
-            >
-              {isRefreshing ? 'Generating...' : 'Generate Actions'}
-            </button>
-          )}
         </div>
       </div>
     );
@@ -205,37 +175,6 @@ export function ActionPlanWidget({
             <span className="text-xl" aria-hidden="true">✨</span>
             <h3 className="font-semibold text-gray-800">Today&apos;s Actions</h3>
           </div>
-          
-          {/* Refresh button */}
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="
-                p-2 text-gray-500 hover:text-indigo-600 hover:bg-white/80
-                rounded-lg transition-colors duration-200
-                focus:outline-none focus:ring-2 focus:ring-indigo-500
-                disabled:opacity-50 disabled:cursor-not-allowed
-              "
-              aria-label="Refresh actions"
-              title="Generate new actions"
-            >
-              <svg 
-                className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`}
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                />
-              </svg>
-            </button>
-          )}
         </div>
 
         {/* Progress bar */}

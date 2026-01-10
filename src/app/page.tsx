@@ -30,9 +30,9 @@ export default function Home() {
             </div>
             
             {/* Main Heading */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-gray-900 mb-8 leading-[0.9] tracking-tight animate-fade-in-up">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold text-gray-900 mb-8 leading-tight tracking-tight animate-fade-in-up">
               Understand Your
-              <span className="block mt-2 gradient-text">
+              <span className="block mt-2 gradient-text pb-2">
                 Founder Psychology
               </span>
             </h1>

@@ -165,6 +165,23 @@ export default function QuizPage() {
         // Also check localStorage for persistent user ID
         const persistentUserId = localStorage.getItem('odId') || localStorage.getItem('fmindset_odId');
         
+        // Always check if user has existing assessments
+        let hasExisting = false;
+        let existingCount = 0;
+        
+        if (persistentUserId) {
+          try {
+            const statsRes = await fetch(`/api/assessment/stats?odId=${persistentUserId}`);
+            if (statsRes.ok) {
+              const stats = await statsRes.json();
+              hasExisting = stats.count > 0;
+              existingCount = stats.count;
+            }
+          } catch (e) {
+            console.error('Failed to fetch assessment stats:', e);
+          }
+        }
+        
         if (storedUserId) {
           // Restore previous progress from session storage
           const storedAnswers = sessionStorage.getItem(STORAGE_KEYS.ANSWERS);
@@ -177,19 +194,38 @@ export default function QuizPage() {
             ? parseInt(storedIndex, 10) 
             : 0;
 
-          setState({
-            isLoading: false,
-            hasSession: true,
-            userId: storedUserId,
-            initialAnswers: answers,
-            initialQuestionIndex: questionIndex,
-            error: null,
-            isOffline: typeof window !== 'undefined' && !navigator.onLine,
-            hasRestoredFromBackup: false,
-            hasExistingAssessment: false,
-            existingAssessmentCount: 0,
-            showRetakeConfirm: false,
-          });
+          // If user has existing assessments and hasn't started answering yet, show retake confirmation
+          const hasStartedAnswering = answers.some((a: AnswerValue | null) => a !== null);
+          
+          if (hasExisting && !hasStartedAnswering) {
+            setState({
+              isLoading: false,
+              hasSession: false,
+              userId: storedUserId,
+              initialAnswers: answers,
+              initialQuestionIndex: questionIndex,
+              error: null,
+              isOffline: typeof window !== 'undefined' && !navigator.onLine,
+              hasRestoredFromBackup: false,
+              hasExistingAssessment: true,
+              existingAssessmentCount: existingCount,
+              showRetakeConfirm: true,
+            });
+          } else {
+            setState({
+              isLoading: false,
+              hasSession: true,
+              userId: storedUserId,
+              initialAnswers: answers,
+              initialQuestionIndex: questionIndex,
+              error: null,
+              isOffline: typeof window !== 'undefined' && !navigator.onLine,
+              hasRestoredFromBackup: false,
+              hasExistingAssessment: hasExisting,
+              existingAssessmentCount: existingCount,
+              showRetakeConfirm: false,
+            });
+          }
         } else {
           // No session - check localStorage for backup (session expiry scenario)
           // Requirements: 1.11
@@ -213,28 +249,12 @@ export default function QuizPage() {
               error: null,
               isOffline: typeof window !== 'undefined' && !navigator.onLine,
               hasRestoredFromBackup: true,
-              hasExistingAssessment: false,
-              existingAssessmentCount: 0,
+              hasExistingAssessment: hasExisting,
+              existingAssessmentCount: existingCount,
               showRetakeConfirm: false,
             });
           } else {
-            // No session and no backup - check if user has existing assessments
-            let hasExisting = false;
-            let existingCount = 0;
-            
-            if (persistentUserId) {
-              try {
-                const statsRes = await fetch(`/api/assessment/stats?odId=${persistentUserId}`);
-                if (statsRes.ok) {
-                  const stats = await statsRes.json();
-                  hasExisting = stats.count > 0;
-                  existingCount = stats.count;
-                }
-              } catch (e) {
-                console.error('Failed to fetch assessment stats:', e);
-              }
-            }
-            
+            // No session and no backup - show landing page or retake confirmation
             setState(prev => ({
               ...prev,
               isLoading: false,
@@ -520,7 +540,7 @@ export default function QuizPage() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={handleStartAssessment}
-                    className="btn-primary flex-1 text-xl py-5"
+                    className="flex-1 text-xl py-5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all"
                   >
                     Yes, Retake Assessment
                   </button>

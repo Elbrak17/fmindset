@@ -49,7 +49,7 @@ Traditional therapy is expensive ($150-300/session) and doesn't understand start
 - Vercel (deployment + serverless functions)
 - All services on free tiers (Neon PostgreSQL, Groq, Vercel)
 
-**Note:** We initially planned to use MongoDB Atlas but switched to Neon PostgreSQL due to connection issues with MongoDB's serverless environment on Vercel.
+**Note:** I initially planned to use MongoDB Atlas but switched to Neon PostgreSQL due to connection issues with MongoDB's serverless environment on Vercel.
 
 ---
 

@@ -23,7 +23,7 @@ Traditional therapy is expensive ($150-300/session) and doesn't understand start
 **FMindset is a free, anonymous psychological assessment** that:
 - Measures **7 psychological dimensions** specific to founders (imposter syndrome, founder doubt, identity fusion, fear of rejection, risk tolerance, motivation type, isolation)
 - Classifies users into **8 founder archetypes** (e.g., "Perfectionist Builder", "Burning Out", "Self-Assured Hustler")
-- Provides **AI-powered personalized insights** using Groq's Llama 3.1 model
+- Provides **AI-powered personalized insights** using Groq's Llama 3.3 model
 - **Predicts burnout risk** in real-time and alerts users when scores reach danger zones
 - Requires **zero personal information** (completely anonymous, no email needed)
 
@@ -41,7 +41,7 @@ Traditional therapy is expensive ($150-300/session) and doesn't understand start
 - NextAuth.js v4 (anonymous authentication)
 
 **AI/ML:**
-- Groq API (Llama 3.1 8B Instant model)
+- Groq API (Llama 3.3 70B Versatile model)
 - Deterministic scoring algorithm (no ML training needed)
 - Property-based testing with fast-check for validation
 
@@ -120,7 +120,7 @@ Based on scores, users are classified into 1 of 8 archetypes:
 
 #### 3. AI-Powered Psychological Insights (Groq)
 
-After scoring, the system calls Groq's Llama 3.1 8B Instant model to generate:
+After scoring, the system calls Groq's Llama 3.3 70B Versatile model to generate:
 - **Psychological state assessment** (1-2 sentences)
 - **3 specific, actionable recommendations** based on scores
 - **1 warning sign to watch for** (if applicable)
@@ -170,7 +170,7 @@ Clean, mobile-responsive results page showing:
 **No datasets used** (deterministic algorithm, not ML model)
 
 **External APIs:**
-- **Groq API** (Llama 3.1 8B Instant) for AI insights
+- **Groq API** (Llama 3.3 70B Versatile) for AI insights
 - **Neon PostgreSQL** for storing assessments (serverless, auto-scaling)
 - **NextAuth.js** for anonymous session management
 

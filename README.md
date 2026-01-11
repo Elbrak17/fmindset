@@ -23,7 +23,7 @@ Traditional therapy is expensive ($150-300/session) and doesn't understand start
 **FMindset is a free, anonymous psychological assessment** that:
 - Measures **7 psychological dimensions** specific to founders (imposter syndrome, founder doubt, identity fusion, fear of rejection, risk tolerance, motivation type, isolation)
 - Classifies users into **8 founder archetypes** (e.g., "Perfectionist Builder", "Burning Out", "Self-Assured Hustler")
-- Provides **AI-powered personalized insights** using Groq's Mixtral-8x7b model
+- Provides **AI-powered personalized insights** using Groq's Llama 3.1 model
 - **Predicts burnout risk** in real-time and alerts users when scores reach danger zones
 - Requires **zero personal information** (completely anonymous, no email needed)
 
@@ -41,7 +41,7 @@ Traditional therapy is expensive ($150-300/session) and doesn't understand start
 - NextAuth.js v4 (anonymous authentication)
 
 **AI/ML:**
-- Groq API (Mixtral-8x7b-32768 model)
+- Groq API (Llama 3.1 8B Instant model)
 - Deterministic scoring algorithm (no ML training needed)
 - Property-based testing with fast-check for validation
 
@@ -118,7 +118,7 @@ Based on scores, users are classified into 1 of 8 archetypes:
 
 #### 3. AI-Powered Psychological Insights (Groq)
 
-After scoring, the system calls Groq's Mixtral-8x7b model to generate:
+After scoring, the system calls Groq's Llama 3.1 model to generate:
 - **Psychological state assessment** (1-2 sentences)
 - **3 specific, actionable recommendations** based on scores
 - **1 warning sign to watch for** (if applicable)
@@ -146,7 +146,7 @@ Clean, mobile-responsive results page showing:
 ### User Flow
 
 ```
-1. Land on fmindset.vercel.app
+1. Land on fmindset-alameda-hackathon.vercel.app
 2. Click "Start Anonymous Assessment" (no email, no signup)
 3. Answer 25 questions (one per page, ~5 minutes total)
 4. Submit → Scores calculated in < 500ms
@@ -168,7 +168,7 @@ Clean, mobile-responsive results page showing:
 **No datasets used** (deterministic algorithm, not ML model)
 
 **External APIs:**
-- **Groq API** (Mixtral-8x7b-32768) for AI insights
+- **Groq API** (Llama 3.1 8B Instant) for AI insights
 - **Neon PostgreSQL** for storing assessments (serverless, auto-scaling)
 - **NextAuth.js** for anonymous session management
 
@@ -249,7 +249,7 @@ npm run test:coverage
 
 ## 📹 Demo Video
 
-[Watch 3-minute demo on YouTube →](#)
+[Watch 3-minute demo on YouTube →](https://youtu.be/3Kgofgjz0WE)
 
 **Demo walkthrough:**
 1. Anonymous assessment start (no email needed)
@@ -266,7 +266,7 @@ npm run test:coverage
 - **Track:** Social Good (Mental Health Impact)
 - **Built:** January 1-11, 2026
 - **Team:** Elbrak17
-- **Live Demo:** https://fmindset.vercel.app
+- **Live Demo:** https://fmindset-alameda-hackathon.vercel.app
 
 ### Why FMindset Fits "Social Good"
 
@@ -278,14 +278,6 @@ npm run test:coverage
 
 ---
 
-## 📚 Documentation
-
-- [Architecture Overview](./docs/architecture.md) - System design & data flow
-- [API Documentation](./docs/api.md) - Endpoint specs & examples
-- [Scoring Algorithm](./docs/scoring.md) - How psychological dimensions are calculated
-- [Testing Strategy](./docs/testing.md) - Property-based testing approach
-
----
 
 ## 🔒 Privacy & Security
 
@@ -299,7 +291,7 @@ npm run test:coverage
 
 ## 📝 License
 
-MIT License - See [LICENSE](./LICENSE) for details.
+MIT License
 
 ---
 
@@ -319,5 +311,7 @@ For questions about FMindset:
 - **GitHub Issues:** [github.com/Elbrak17/fmindset/issues](https://github.com/Elbrak17/fmindset/issues)
 
 ---
+
+**🏆 Built for Alameda Hacks 2025 — Social Good Track**
 
 **Built with ❤️ for founders who feel alone. You're not. We've got you.**

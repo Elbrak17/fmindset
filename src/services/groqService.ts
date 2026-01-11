@@ -1,7 +1,7 @@
 import { PsychologicalScores, ArchetypeName } from '../types/assessment';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'mixtral-8x7b-32768';
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 const GROQ_TIMEOUT = 3000;
 
 const FALLBACK_TEXT = "We're generating personalized insights for you. Check back in a moment.";
@@ -36,7 +36,7 @@ Tone: Warm, supportive, non-clinical. Speak directly to the founder. Keep respon
 /**
  * Fetches personalized psychological insights from Groq API
  * 
- * - Uses mixtral-8x7b-32768 model
+ * - Uses llama-3.1-8b-instant model
  * - 3000ms timeout
  * - Returns fallback text on timeout or error (never throws)
  * - Logs errors to console

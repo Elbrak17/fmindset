@@ -49,6 +49,8 @@ Traditional therapy is expensive ($150-300/session) and doesn't understand start
 - Vercel (deployment + serverless functions)
 - All services on free tiers (Neon PostgreSQL, Groq, Vercel)
 
+**Note:** We initially planned to use MongoDB Atlas but switched to Neon PostgreSQL due to connection issues with MongoDB's serverless environment on Vercel.
+
 ---
 
 ## 💡 Purpose
@@ -118,7 +120,7 @@ Based on scores, users are classified into 1 of 8 archetypes:
 
 #### 3. AI-Powered Psychological Insights (Groq)
 
-After scoring, the system calls Groq's Llama 3.1 model to generate:
+After scoring, the system calls Groq's Llama 3.1 8B Instant model to generate:
 - **Psychological state assessment** (1-2 sentences)
 - **3 specific, actionable recommendations** based on scores
 - **1 warning sign to watch for** (if applicable)
@@ -209,18 +211,24 @@ npm install
 **3. Create `.env.local` file:**
 
 ```bash
+# Neon PostgreSQL Database URL (we switched from MongoDB due to serverless connection issues)
 DATABASE_URL=postgresql://username:password@ep-xxxxx.region.aws.neon.tech/dbname?sslmode=require
+
+# Groq AI API Key
 GROQ_API_KEY=gsk_your_key_here
+
+# NextAuth Configuration
 NEXTAUTH_SECRET=your_secret_here
 NEXTAUTH_URL=http://localhost:3000
+
+# Environment
 NODE_ENV=development
 ```
 
 **4. Setup database (create tables):**
 
 ```bash
-npm install -D dotenv-cli
-npx dotenv -e .env.local -- npm run db:push
+npm run db:push
 ```
 
 **5. Run development server:**
@@ -278,7 +286,6 @@ npm run test:coverage
 
 ---
 
-
 ## 🔒 Privacy & Security
 
 - **Zero personal data collected** (completely anonymous)
@@ -313,5 +320,4 @@ For questions about FMindset:
 ---
 
 **🏆 Built for Alameda Hacks 2025 — Social Good Track**
-
 **Built with ❤️ for founders who feel alone. You're not. We've got you.**

@@ -319,5 +319,6 @@ For questions about FMindset:
 
 ---
 
-**🏆 Built for Alameda Hacks 2025 — Social Good Track**
+**🏆 Built for Alameda Hacks 2026 — Social Good Track**
+
 **Built with ❤️ for founders who feel alone. You're not. We've got you.**

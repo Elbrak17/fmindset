@@ -1,8 +1,19 @@
 # 🧠 FMindset
 
-**A psychological assessment platform helping young founders prevent burnout and understand their mental patterns.**
+<!-- Badges -->
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-fmindset--alameda--hackathon.vercel.app-blue?style=for-the-badge)](https://fmindset-alameda-hackathon.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
+[![Built for AlamedaHacks](https://img.shields.io/badge/Built_for-AlamedaHacks_2026-purple?style=for-the-badge)](https://www.alamedahacks.xyz)
 
-> Built for AlamedaHacks 2026 | Track: Social Good
+---
+
+## 🌟 Overview
+
+**FMindset** is a free, anonymous psychological assessment platform that helps young founders (ages 16-24) prevent burnout and understand their mental patterns before it's too late.
+
+**🔑 Key Innovation:** A deterministic algorithm analyzing 7 founder-specific psychological dimensions, combined with generative AI (Groq Llama 3.3 70B) to deliver personalized insights in real-time — completely anonymous, no signup required.
+
+> 🏆 Built for [AlamedaHacks 2026](https://www.alamedahacks.xyz) | Track: Social Good
 
 ---
 
@@ -49,7 +60,7 @@ Traditional therapy is expensive ($150-300/session) and doesn't understand start
 - Vercel (deployment + serverless functions)
 - All services on free tiers (Neon PostgreSQL, Groq, Vercel)
 
-**Note:** I initially planned to use MongoDB Atlas but switched to Neon PostgreSQL due to connection issues with MongoDB's serverless environment on Vercel.
+**Note:** We initially planned to use MongoDB Atlas but switched to Neon PostgreSQL due to connection issues with MongoDB's serverless environment on Vercel.
 
 ---
 
@@ -298,7 +309,7 @@ npm run test:coverage
 
 ## 📝 License
 
-MIT License
+This project is licensed under the [MIT License](./LICENSE).
 
 ---
 
@@ -319,6 +330,6 @@ For questions about FMindset:
 
 ---
 
-**🏆 Built for Alameda Hacks 2026 — Social Good Track**
+**🏆 Built for [AlamedaHacks 2026](https://www.alamedahacks.xyz) — Social Good Track**
 
 **Built with ❤️ for founders who feel alone. You're not. We've got you.**

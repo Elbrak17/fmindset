@@ -2,7 +2,7 @@ import { PsychologicalScores, ArchetypeName } from '../types/assessment';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_TIMEOUT = 3000;
+const GROQ_TIMEOUT = 10000; // 10 seconds for reliable response
 
 const FALLBACK_TEXT = "We're generating personalized insights for you. Check back in a moment.";
 
